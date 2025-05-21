@@ -557,10 +557,57 @@ func (a *CaptureAgent) heartbeatRoutine() {
 	for range ticker.C {
 		a.statusMutex.Lock()
 		a.status.LastHeartbeat = time.Now()
+		currentStatus := a.status.Status
 		a.statusMutex.Unlock()
 
-		// TODO: Heartbeat an den Hauptserver senden
-		log.Printf("Heartbeat: Agent %s is alive", a.config.Agent.Name)
+		// Heartbeat an den Hauptserver senden, wenn eine Server-URL konfiguriert ist
+		if a.config.Agent.ServerURL != "" {
+			// Heartbeat-Daten vorbereiten
+			heartbeatData := map[string]string{
+				"name":   a.config.Agent.Name,
+				"status": currentStatus,
+			}
+
+			jsonData, err := json.Marshal(heartbeatData)
+			if err != nil {
+				log.Printf("Fehler beim Erstellen des Heartbeats: %v", err)
+				continue
+			}
+
+			// Heartbeat-URL zusammensetzen
+			heartbeatURL := fmt.Sprintf("%s/api/agents/heartbeat", a.config.Agent.ServerURL)
+
+			// HTTP-Request senden
+			req, err := http.NewRequest("POST", heartbeatURL, bytes.NewBuffer(jsonData))
+			if err != nil {
+				log.Printf("Fehler beim Erstellen des Heartbeat-Requests: %v", err)
+				continue
+			}
+
+			req.Header.Set("Content-Type", "application/json")
+			if a.config.Agent.APIKey != "" {
+				req.Header.Set("X-API-Key", a.config.Agent.APIKey)
+			}
+
+			client := &http.Client{Timeout: 5 * time.Second}
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Printf("Fehler beim Senden des Heartbeats: %v", err)
+				continue
+			}
+
+			// Antwort verwerfen
+			resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				log.Printf("Heartbeat wurde vom Server nicht akzeptiert. Status: %d", resp.StatusCode)
+			} else {
+				log.Printf("Heartbeat: Agent %s ist aktiv und mit dem Server verbunden", a.config.Agent.Name)
+			}
+		} else {
+			// Kein Server konfiguriert, lokale Protokollierung
+			log.Printf("Heartbeat: Agent %s is alive (keine Server-Verbindung)", a.config.Agent.Name)
+		}
 	}
 }
 
