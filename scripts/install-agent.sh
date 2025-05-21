@@ -71,44 +71,37 @@ echo -e "${YELLOW}Grundlegende Abhängigkeiten installieren...${NC}"
 apt-get update
 apt-get install -y curl wget libpcap-dev git build-essential
 
-# Go-Version prüfen und ggf. aktualisieren
-install_go() {
-  echo -e "${YELLOW}Installiere Go 1.18...${NC}"
-  cd /tmp
-  wget https://go.dev/dl/go1.18.10.linux-amd64.tar.gz
-  rm -rf /usr/local/go
-  tar -C /usr/local -xzf go1.18.10.linux-amd64.tar.gz
-  
-  # PATH setzen
-  echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/go.sh
-  chmod +x /etc/profile.d/go.sh
-  source /etc/profile.d/go.sh
-  
-  # Hinzufügen zum aktuellen PATH
-  export PATH=$PATH:/usr/local/go/bin
-  
-  echo -e "${GREEN}Go 1.18 wurde installiert.${NC}"
-}
-
-# Go installieren wenn nicht vorhanden oder zu alt
-if command -v go &> /dev/null; then
-  GO_VERSION=$(go version | grep -oP 'go\K[0-9]+\.[0-9]+')
-  GO_VERSION_MAJOR=$(echo $GO_VERSION | cut -d. -f1)
-  GO_VERSION_MINOR=$(echo $GO_VERSION | cut -d. -f2)
-
-  if [ "$GO_VERSION_MAJOR" -lt 1 ] || ([ "$GO_VERSION_MAJOR" -eq 1 ] && [ "$GO_VERSION_MINOR" -lt 16 ]); then
-    echo -e "${YELLOW}Go Version $GO_VERSION ist zu alt. Version 1.16 oder höher wird benötigt.${NC}"
-    install_go
-  else
-    echo -e "${GREEN}Go $GO_VERSION gefunden.${NC}"
-  fi
-else
-  echo -e "${YELLOW}Go ist nicht installiert.${NC}"
-  install_go
+# Go 1.18 installieren (unabhängig von vorhandener Version)
+echo -e "${YELLOW}Go 1.18 installieren...${NC}"
+cd /tmp
+wget -q https://go.dev/dl/go1.18.10.linux-amd64.tar.gz
+if [ ! -f go1.18.10.linux-amd64.tar.gz ]; then
+  echo -e "${RED}Fehler beim Herunterladen von Go 1.18.${NC}"
+  exit 1
 fi
 
-# Go-Version nach Installation/Update prüfen
-go version
+echo -e "${YELLOW}Vorhandene Go-Installation entfernen (falls vorhanden)...${NC}"
+rm -rf /usr/local/go
+
+echo -e "${YELLOW}Go 1.18 extrahieren...${NC}"
+tar -C /usr/local -xzf go1.18.10.linux-amd64.tar.gz
+
+# PATH setzen
+echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/go.sh
+chmod +x /etc/profile.d/go.sh
+source /etc/profile.d/go.sh
+
+# Hinzufügen zum aktuellen PATH
+export PATH=$PATH:/usr/local/go/bin
+
+# Go-Version überprüfen
+if ! command -v go &> /dev/null; then
+  echo -e "${RED}Go wurde nicht korrekt installiert. PATH: $PATH${NC}"
+  exit 1
+fi
+
+GO_VERSION=$(go version | grep -oP 'go\K[0-9]+\.[0-9]+')
+echo -e "${GREEN}Go $GO_VERSION erfolgreich installiert.${NC}"
 
 # Verzeichnisse erstellen
 echo -e "${YELLOW}Verzeichnisse vorbereiten...${NC}"
@@ -126,9 +119,26 @@ fi
 git clone https://github.com/nextX-AG/ai-network-analyser.git
 cd ai-network-analyser
 
+# go.mod korrigieren, falls notwendig
+if grep -q "go 1.24" go.mod; then
+  echo -e "${YELLOW}Korrigiere go.mod auf Go 1.18...${NC}"
+  sed -i 's/go 1.24.2/go 1.18/' go.mod
+fi
+
 # Agent kompilieren
 echo -e "${YELLOW}Agent kompilieren...${NC}"
-go build -o agent cmd/agent/main.go
+# Debugging-Info für Kompilierungsprobleme
+GOROOT=/usr/local/go
+echo "GOROOT: $GOROOT"
+echo "PATH: $PATH"
+echo "Go Version: $(go version)"
+echo "pwd: $(pwd)"
+echo "Inhalt go.mod:"
+cat go.mod
+
+# Kompilieren mit debug-Ausgabe
+go build -v -o agent cmd/agent/main.go
+
 if [ ! -f "agent" ]; then
   echo -e "${RED}Kompilierung fehlgeschlagen!${NC}"
   exit 1
@@ -184,6 +194,7 @@ ProtectHome=read-only
 PrivateTmp=true
 NoNewPrivileges=true
 Environment="PATH=/usr/local/go/bin:$PATH"
+Environment="GOROOT=/usr/local/go"
 
 [Install]
 WantedBy=multi-user.target
@@ -200,7 +211,7 @@ sleep 2
 if systemctl is-active --quiet ki-network-analyzer-agent; then
   echo -e "${GREEN}Agent wurde erfolgreich installiert und gestartet!${NC}"
 else
-  echo -e "${RED}Agent konnte nicht gestartet werden. Bitte prüfen Sie den Status mit: systemctl status ki-network-analyzer-agent${NC}"
+  echo -e "${RED}Agent konnte nicht gestartet werden. Prüfen Sie den Status mit: systemctl status ki-network-analyzer-agent${NC}"
   exit 1
 fi
 
