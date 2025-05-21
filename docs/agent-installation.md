@@ -5,31 +5,62 @@ Diese Anleitung beschreibt die Installation und Konfiguration des Remote-Agents 
 ## Systemanforderungen
 
 - Linux-System (Ubuntu/Debian empfohlen)
-- Go 1.16+ (falls Kompilierung aus Quellcode gewünscht)
+- Go 1.16+ (für Kompilierung aus Quellcode)
 - Administratorrechte (sudo)
+- git
 
-## Binäre Installation
+## Installation aus Quellcode
 
-### 1. Vorgefertigte Binärdatei herunterladen
+Da aktuell noch keine vorgefertigten Binaries als Release verfügbar sind, muss der Agent aus dem Quellcode kompiliert werden.
+
+### 1. Go installieren (falls noch nicht geschehen)
 
 ```bash
-mkdir -p /opt/ki-network-analyzer
-cd /opt/ki-network-analyzer
-wget https://github.com/sayedamirkarim/ki-network-analyzer/releases/latest/download/agent-linux-amd64 -O agent
-chmod +x agent
+sudo apt-get update
+sudo apt-get install -y golang-go
 ```
 
-### 2. Konfigurationsverzeichnisse erstellen
+Überprüfen Sie die Go-Version:
 
 ```bash
-mkdir -p /etc/ki-network-analyzer
-mkdir -p /var/log/ki-network-analyzer
+go version
 ```
 
-### 3. Basis-Konfiguration erstellen
+Die Version sollte 1.16 oder höher sein.
+
+### 2. Repository klonen
 
 ```bash
-cat > /etc/ki-network-analyzer/agent.json << EOL
+cd /opt
+sudo git clone https://github.com/nextX-AG/ai-network-analyser.git ki-network-analyzer
+cd ki-network-analyzer
+```
+
+### 3. Agent kompilieren
+
+```bash
+sudo go build -o agent cmd/agent/main.go
+```
+
+### 4. Berechtigungen setzen
+
+```bash
+sudo chmod +x agent
+```
+
+## Konfiguration
+
+### 1. Konfigurationsverzeichnisse erstellen
+
+```bash
+sudo mkdir -p /etc/ki-network-analyzer
+sudo mkdir -p /var/log/ki-network-analyzer
+```
+
+### 2. Basis-Konfiguration erstellen
+
+```bash
+sudo cat > /etc/ki-network-analyzer/agent.json << EOL
 {
   "agent": {
     "listen": "0.0.0.0:8090",
@@ -42,15 +73,32 @@ cat > /etc/ki-network-analyzer/agent.json << EOL
     "promisc_mode": true,
     "snap_len": 65535,
     "buffer_size": 4194304
+  },
+  "gateway": {
+    "detect_gateways": true,
+    "track_dhcp": true,
+    "track_dns": true,
+    "track_arp": true
   }
 }
 EOL
 ```
 
+Passen Sie die folgenden Werte an:
+- `server_url`: IP-Adresse oder Hostname des Hauptservers
+- `interface`: Netzwerkschnittstelle, auf der der Agent lauschen soll
+- `name`: Ein eindeutiger Name für diesen Agent
+
+### 3. Abhängigkeiten für Packet-Capturing installieren
+
+```bash
+sudo apt-get install -y libpcap-dev
+```
+
 ### 4. Systemd-Service installieren
 
 ```bash
-cat > /etc/systemd/system/ki-network-analyzer-agent.service << EOL
+sudo cat > /etc/systemd/system/ki-network-analyzer-agent.service << EOL
 [Unit]
 Description=KI-Netzwerk-Analyzer Remote Agent
 After=network.target
@@ -73,9 +121,9 @@ WantedBy=multi-user.target
 EOL
 
 # Service aktivieren und starten
-systemctl daemon-reload
-systemctl enable ki-network-analyzer-agent
-systemctl start ki-network-analyzer-agent
+sudo systemctl daemon-reload
+sudo systemctl enable ki-network-analyzer-agent
+sudo systemctl start ki-network-analyzer-agent
 ```
 
 ## Webinterface
@@ -95,8 +143,8 @@ Für Man-in-the-Middle (MITM) Monitoring kann eine Netzwerk-Bridge konfiguriert 
 ### 1. Benötigte Pakete installieren
 
 ```bash
-apt-get update
-apt-get install -y bridge-utils
+sudo apt-get update
+sudo apt-get install -y bridge-utils
 ```
 
 ### 2. Bridge-Schnittstelle einrichten
@@ -122,7 +170,7 @@ Passen Sie die IP-Adressen und Schnittstellen (eth0, eth1) nach Bedarf an.
 ### 3. Netzwerkkonfiguration neuladen
 
 ```bash
-systemctl restart networking
+sudo systemctl restart networking
 ```
 
 ### 4. Agent-Konfiguration anpassen
@@ -130,7 +178,7 @@ systemctl restart networking
 Öffnen Sie die Agent-Konfigurationsdatei:
 
 ```bash
-nano /etc/ki-network-analyzer/agent.json
+sudo nano /etc/ki-network-analyzer/agent.json
 ```
 
 Ändern Sie die Interface-Einstellung auf `br0`:
@@ -142,7 +190,7 @@ nano /etc/ki-network-analyzer/agent.json
 ### 5. Agent neustarten
 
 ```bash
-systemctl restart ki-network-analyzer-agent
+sudo systemctl restart ki-network-analyzer-agent
 ```
 
 ## Fehlerbehebung
@@ -152,7 +200,15 @@ systemctl restart ki-network-analyzer-agent
 Überprüfen Sie die Logs mit:
 
 ```bash
-journalctl -u ki-network-analyzer-agent -f
+sudo journalctl -u ki-network-analyzer-agent -f
+```
+
+### Kompilierungsfehler
+
+Stellen Sie sicher, dass alle Abhängigkeiten installiert sind:
+
+```bash
+sudo apt-get install -y golang-go libpcap-dev build-essential
 ```
 
 ### Keine Pakete werden erfasst
