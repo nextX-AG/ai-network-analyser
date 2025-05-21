@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KI-Netzwerk-Analyzer - Gateway-Analyse</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .upload-section {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #file-name {
+            margin-top: 10px;
+            font-style: italic;
+        }
+        #results {
+            display: none;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background-color: white;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+            flex: 1;
+            min-width: 200px;
+            margin-right: 15px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .stat-card:last-child {
+            margin-right: 0;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .gateway-item {
+            background-color: white;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>KI-Netzwerk-Analyzer - Gateway-Analyse</h1>
+        <p>Analysieren Sie Ihre PCAP-Dateien mit Fokus auf Gateway-Verkehr und entdecken Sie wichtige Muster und potenzielle Probleme.</p>
+        
+        <div class="upload-section">
+            <h2>PCAP-Datei hochladen</h2>
+            <p>Wählen Sie eine PCAP-Datei aus Ihrem Computer aus oder ziehen Sie sie hierher.</p>
+            <input type="file" id="pcap-upload" accept=".pcap,.pcapng" style="display: none;">
+            <button id="upload-btn">Datei auswählen</button>
+            <div id="file-name"></div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <p>Ihre PCAP-Datei wird analysiert. Dies kann je nach Größe einige Zeit dauern...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div id="results">
+            <h2>Analyse-Ergebnisse</h2>
+            
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-packets">0</div>
+                    <div class="stat-label">Gesamte Pakete</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="gateway-packets">0</div>
+                    <div class="stat-label">Gateway-Pakete</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="gateway-percentage">0%</div>
+                    <div class="stat-label">Gateway-Anteil</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Erkannte Gateways</h3>
+                <div id="gateways-list"></div>
+            </div>
+            
+            <div class="section">
+                <h3>Gateway-Ereignisse</h3>
+                <table id="events-table">
+                    <thead>
+                        <tr>
+                            <th>Zeitstempel</th>
+                            <th>Typ</th>
+                            <th>Beschreibung</th>
+                            <th>Schweregrad</th>
+                            <th>Gateway IP</th>
+                            <th>Client IP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="events-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadBtn = document.getElementById('upload-btn');
+            const fileInput = document.getElementById('pcap-upload');
+            const fileName = document.getElementById('file-name');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const error = document.getElementById('error');
+            
+            // Statistik-Elemente
+            const totalPackets = document.getElementById('total-packets');
+            const gatewayPackets = document.getElementById('gateway-packets');
+            const gatewayPercentage = document.getElementById('gateway-percentage');
+            const gatewaysList = document.getElementById('gateways-list');
+            const eventsBody = document.getElementById('events-body');
+            
+            // Button-Klick zum Datei-Upload
+            uploadBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // Änderungen bei Dateiauswahl
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length > 0) {
+                    fileName.textContent = `Ausgewählte Datei: ${fileInput.files[0].name}`;
+                    uploadFile(fileInput.files[0]);
+                }
+            });
+            
+            // Drag & Drop-Funktionalität
+            const uploadSection = document.querySelector('.upload-section');
+            
+            uploadSection.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadSection.style.borderColor = '#3498db';
+                uploadSection.style.backgroundColor = '#ebf5fb';
+            });
+            
+            uploadSection.addEventListener('dragleave', function() {
+                uploadSection.style.borderColor = '#ccc';
+                uploadSection.style.backgroundColor = '#f9f9f9';
+            });
+            
+            uploadSection.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadSection.style.borderColor = '#ccc';
+                uploadSection.style.backgroundColor = '#f9f9f9';
+                
+                if (e.dataTransfer.files.length > 0) {
+                    const file = e.dataTransfer.files[0];
+                    if (file.name.endsWith('.pcap') || file.name.endsWith('.pcapng')) {
+                        fileName.textContent = `Ausgewählte Datei: ${file.name}`;
+                        uploadFile(file);
+                    } else {
+                        showError('Bitte wählen Sie eine PCAP- oder PCAPNG-Datei aus.');
+                    }
+                }
+            });
+            
+            // Datei hochladen und analysieren
+            function uploadFile(file) {
+                const formData = new FormData();
+                formData.append('pcap', file);
+                
+                // UI vorbereiten
+                loading.style.display = 'block';
+                results.style.display = 'none';
+                error.style.display = 'none';
+                
+                // API-Anfrage
+                fetch('/api/analyze', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loading.style.display = 'none';
+                    
+                    if (data.success) {
+                        displayResults(data.data);
+                    } else {
+                        showError(data.error || 'Ein unbekannter Fehler ist aufgetreten.');
+                    }
+                })
+                .catch(err => {
+                    loading.style.display = 'none';
+                    showError('Fehler bei der Kommunikation mit dem Server: ' + err.message);
+                });
+            }
+            
+            // Ergebnisse anzeigen
+            function displayResults(data) {
+                // Statistiken anzeigen
+                totalPackets.textContent = data.total_packets || 0;
+                gatewayPackets.textContent = data.gateway_packets || 0;
+                gatewayPercentage.textContent = ((data.gateway_percentage || 0).toFixed(1) + '%');
+                
+                // Gateway-Informationen laden
+                loadGateways();
+                
+                // Gateway-Ereignisse laden
+                loadGatewayEvents();
+                
+                // Ergebnisbereich anzeigen
+                results.style.display = 'block';
+            }
+            
+            // Gateway-Informationen laden
+            function loadGateways() {
+                fetch('/api/gateways')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        gatewaysList.innerHTML = '';
+                        
+                        data.data.forEach(gateway => {
+                            const gatewayElement = document.createElement('div');
+                            gatewayElement.className = 'gateway-item';
+                            
+                            gatewayElement.innerHTML = `
+                                <strong>IP:</strong> ${gateway.ip}<br>
+                                <strong>MAC:</strong> ${gateway.mac}<br>
+                                <strong>Rolle:</strong> ${gateway.role}<br>
+                                <strong>Dienste:</strong> ${gateway.services.join(', ')}
+                            `;
+                            
+                            gatewaysList.appendChild(gatewayElement);
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error('Fehler beim Laden der Gateway-Informationen:', err);
+                });
+            }
+            
+            // Gateway-Ereignisse laden
+            function loadGatewayEvents() {
+                fetch('/api/events/gateway')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        eventsBody.innerHTML = '';
+                        
+                        data.data.forEach(event => {
+                            const row = document.createElement('tr');
+                            
+                            // Formatierter Zeitstempel
+                            const timestamp = new Date(event.timestamp);
+                            const formattedTime = timestamp.toLocaleString();
+                            
+                            row.innerHTML = `
+                                <td>${formattedTime}</td>
+                                <td>${event.event_type}</td>
+                                <td>${event.description}</td>
+                                <td>${event.severity}</td>
+                                <td>${event.gateway_ip}</td>
+                                <td>${event.client_ip}</td>
+                            `;
+                            
+                            eventsBody.appendChild(row);
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error('Fehler beim Laden der Gateway-Ereignisse:', err);
+                });
+            }
+            
+            // Fehlermeldung anzeigen
+            function showError(message) {
+                error.textContent = message;
+                error.style.display = 'block';
+                results.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html> 

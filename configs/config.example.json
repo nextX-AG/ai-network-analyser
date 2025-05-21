@@ -1,0 +1,52 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 9090,
+    "enable_websocket": true,
+    "enable_cors": true,
+    "static_dir": "./web"
+  },
+  "capture": {
+    "pcap_dir": "./pcaps",
+    "interface": "",
+    "promisc_mode": true,
+    "snap_len": 65535,
+    "filter": "(udp port 53) or (udp port 67 or udp port 68) or (arp) or (icmp)",
+    "buffer_size": 2097152,
+    "enable_live": false
+  },
+  "storage": {
+    "type": "sqlite",
+    "path": "./data/packets.db",
+    "auto_vacuum": true,
+    "max_packets": 1000000
+  },
+  "ai": {
+    "enabled": false,
+    "provider": "openai",
+    "api_key": "",
+    "endpoint": "https://api.openai.com/v1",
+    "model": "gpt-4",
+    "max_tokens": 1000,
+    "temperature": 0.1
+  },
+  "speech": {
+    "enabled": false,
+    "engine": "whisper_local",
+    "model_path": "./models/whisper.bin",
+    "language": "auto",
+    "api_key": ""
+  },
+  "gateway": {
+    "detect_gateways": true,
+    "known_gateways": ["192.168.1.1", "10.0.0.1"],
+    "track_nat": true,
+    "track_dns": true,
+    "track_dhcp": true,
+    "track_arp": true,
+    "detect_port_forwarding": true,
+    "detect_dmz": true,
+    "detect_upnp": true,
+    "enable_alerts": true
+  }
+} 

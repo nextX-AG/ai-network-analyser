@@ -1,0 +1,38 @@
+# Go-spezifische Ignores
+/bin/
+/vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Node/NPM
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Build-Verzeichnisse
+/build/
+/dist/
+/web/build/
+/web/dist/
+
+# Entwicklungsumgebung
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Projektspezifisch
+/data/
+/pcaps/
+/configs/*.local.json
+*.pcap
+*.db
+*.sqlite 
