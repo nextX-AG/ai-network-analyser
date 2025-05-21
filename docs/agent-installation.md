@@ -2,18 +2,47 @@
 
 Diese Anleitung beschreibt die Installation und Konfiguration des Remote-Agents auf einem UP Board oder einem anderen Linux-System.
 
-## Systemanforderungen
+## Schnell-Installation mit Installationsskript (empfohlen)
+
+Die einfachste Methode zur Installation des Agents ist unser automatisches Installationsskript:
+
+```bash
+# Skript herunterladen
+curl -O https://raw.githubusercontent.com/nextX-AG/ai-network-analyser/main/scripts/install-agent.sh
+chmod +x install-agent.sh
+
+# Mit Standardwerten installieren
+sudo ./install-agent.sh
+
+# ODER: Mit benutzerdefinierten Werten installieren
+sudo ./install-agent.sh --server-url=http://192.168.1.100:9090 --name=gateway-agent --interface=eth0
+```
+
+Das Skript installiert alle benötigten Abhängigkeiten, kompiliert den Agent, richtet die Konfiguration ein und startet den Dienst automatisch.
+
+Nach der Installation können Sie das Webinterface unter `http://agent-ip:8090/admin` aufrufen, um den Agent zu konfigurieren und zu verwalten.
+
+### Skript-Optionen
+
+- `--server-url=URL`: URL des Hauptservers (Standard: http://localhost:9090)
+- `--name=NAME`: Name des Agents (Standard: Hostname)
+- `--interface=IFACE`: Zu verwendende Netzwerkschnittstelle (Standard: eth0)
+- `--help`: Zeigt die Hilfe an
+
+## Manuelle Installation (Alternative)
+
+Falls Sie den Agent manuell installieren möchten, folgen Sie dieser Anleitung.
+
+### Systemanforderungen
 
 - Linux-System (Ubuntu/Debian empfohlen)
 - Go 1.16+ (für Kompilierung aus Quellcode)
 - Administratorrechte (sudo)
 - git
 
-## Installation aus Quellcode
+### Installation aus Quellcode
 
-Da aktuell noch keine vorgefertigten Binaries als Release verfügbar sind, muss der Agent aus dem Quellcode kompiliert werden.
-
-### 1. Go installieren (falls noch nicht geschehen)
+#### 1. Go installieren (falls noch nicht geschehen)
 
 ```bash
 sudo apt-get update
@@ -28,7 +57,7 @@ go version
 
 Die Version sollte 1.16 oder höher sein.
 
-### 2. Repository klonen
+#### 2. Repository klonen
 
 ```bash
 cd /opt
@@ -36,28 +65,28 @@ sudo git clone https://github.com/nextX-AG/ai-network-analyser.git ki-network-an
 cd ki-network-analyzer
 ```
 
-### 3. Agent kompilieren
+#### 3. Agent kompilieren
 
 ```bash
 sudo go build -o agent cmd/agent/main.go
 ```
 
-### 4. Berechtigungen setzen
+#### 4. Berechtigungen setzen
 
 ```bash
 sudo chmod +x agent
 ```
 
-## Konfiguration
+### Konfiguration
 
-### 1. Konfigurationsverzeichnisse erstellen
+#### 1. Konfigurationsverzeichnisse erstellen
 
 ```bash
 sudo mkdir -p /etc/ki-network-analyzer
 sudo mkdir -p /var/log/ki-network-analyzer
 ```
 
-### 2. Basis-Konfiguration erstellen
+#### 2. Basis-Konfiguration erstellen
 
 ```bash
 sudo cat > /etc/ki-network-analyzer/agent.json << EOL
@@ -89,13 +118,13 @@ Passen Sie die folgenden Werte an:
 - `interface`: Netzwerkschnittstelle, auf der der Agent lauschen soll
 - `name`: Ein eindeutiger Name für diesen Agent
 
-### 3. Abhängigkeiten für Packet-Capturing installieren
+#### 3. Abhängigkeiten für Packet-Capturing installieren
 
 ```bash
 sudo apt-get install -y libpcap-dev
 ```
 
-### 4. Systemd-Service installieren
+#### 4. Systemd-Service installieren
 
 ```bash
 sudo cat > /etc/systemd/system/ki-network-analyzer-agent.service << EOL
@@ -175,21 +204,17 @@ sudo systemctl restart networking
 
 ### 4. Agent-Konfiguration anpassen
 
-Öffnen Sie die Agent-Konfigurationsdatei:
+Im Webinterface:
+1. Öffnen Sie die Admin-Oberfläche unter `http://agent-ip:8090/admin`
+2. Wählen Sie im Dropdown-Menü "Erfassungsschnittstelle" die Option "br0"
+3. Klicken Sie auf "Konfiguration speichern"
+4. Klicken Sie auf "Agent neustarten"
+
+Oder manuell über die Kommandozeile:
 
 ```bash
 sudo nano /etc/ki-network-analyzer/agent.json
-```
-
-Ändern Sie die Interface-Einstellung auf `br0`:
-
-```json
-"interface": "br0",
-```
-
-### 5. Agent neustarten
-
-```bash
+# Ändern Sie "interface": "eth0" zu "interface": "br0"
 sudo systemctl restart ki-network-analyzer-agent
 ```
 
