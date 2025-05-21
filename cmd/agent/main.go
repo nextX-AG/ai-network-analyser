@@ -94,6 +94,9 @@ func main() {
 	// Register API routes
 	captureAgent.RegisterRoutes(router)
 
+	// Register Admin UI routes
+	captureAgent.RegisterAdminHandlers(router)
+
 	// Set up and start the HTTP server
 	server := &http.Server{
 		Addr:    cfg.Agent.Listen,
