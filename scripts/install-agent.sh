@@ -163,8 +163,20 @@ if [ ! -f "agent" ]; then
   exit 1
 fi
 
+# Prüfen, ob der Agent-Dienst bereits existiert und läuft
+if systemctl list-unit-files | grep -q ki-network-analyzer-agent; then
+  echo -e "${YELLOW}Bestehenden Agent-Dienst stoppen...${NC}"
+  systemctl stop ki-network-analyzer-agent || true
+  # Kurz warten, damit der Prozess beendet werden kann
+  sleep 2
+fi
+
 # Agent installieren
 echo -e "${YELLOW}Agent installieren...${NC}"
+# Sicherheitsmaßnahme: Alte Binary entfernen, falls noch vorhanden
+if [ -f "$INSTALL_DIR/agent" ]; then
+  rm -f "$INSTALL_DIR/agent"
+fi
 cp agent $INSTALL_DIR/
 chmod +x $INSTALL_DIR/agent
 
