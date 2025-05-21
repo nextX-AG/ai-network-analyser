@@ -71,38 +71,53 @@ echo -e "${YELLOW}Grundlegende Abhängigkeiten installieren...${NC}"
 apt-get update
 apt-get install -y curl wget libpcap-dev git build-essential
 
-# Neueste Go-Version (1.22) installieren
-echo -e "${YELLOW}Go 1.22 installieren...${NC}"
+# Aktuelle Go-Installation entfernen (falls vorhanden)
+echo -e "${YELLOW}Alle vorhandenen Go-Installationen entfernen...${NC}"
+apt-get remove -y golang golang-go
+apt-get autoremove -y
+rm -rf /usr/local/go
+
+# Neueste Go-Version (1.20) installieren - 1.20 ist stabiler als 1.22 für ältere Systeme
+echo -e "${YELLOW}Go 1.20 installieren...${NC}"
 cd /tmp
-wget -q https://go.dev/dl/go1.22.0.linux-amd64.tar.gz
-if [ ! -f go1.22.0.linux-amd64.tar.gz ]; then
-  echo -e "${RED}Fehler beim Herunterladen von Go 1.22.${NC}"
+GO_VERSION="1.20.14"
+wget -q "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
+if [ ! -f "go${GO_VERSION}.linux-amd64.tar.gz" ]; then
+  echo -e "${RED}Fehler beim Herunterladen von Go ${GO_VERSION}.${NC}"
   exit 1
 fi
 
-echo -e "${YELLOW}Vorhandene Go-Installation entfernen (falls vorhanden)...${NC}"
-rm -rf /usr/local/go
-
-echo -e "${YELLOW}Go 1.22 extrahieren...${NC}"
-tar -C /usr/local -xzf go1.22.0.linux-amd64.tar.gz
+echo -e "${YELLOW}Go ${GO_VERSION} extrahieren...${NC}"
+tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz"
 
 # Systemweiten PATH setzen
 echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/go.sh
 chmod +x /etc/profile.d/go.sh
-source /etc/profile.d/go.sh
-
-# Auch für den aktuellen Prozess setzen
 export PATH=$PATH:/usr/local/go/bin
 export GOROOT=/usr/local/go
 
 # Go-Version überprüfen
-if ! command -v go &> /dev/null; then
-  echo -e "${RED}Go wurde nicht korrekt installiert. PATH: $PATH${NC}"
+echo -e "${YELLOW}Prüfe Go-Installation...${NC}"
+if ! /usr/local/go/bin/go version; then
+  echo -e "${RED}Go-Installation fehlgeschlagen.${NC}"
   exit 1
 fi
 
-GO_VERSION=$(go version | grep -oP 'go\K[0-9]+\.[0-9]+')
-echo -e "${GREEN}Go $GO_VERSION erfolgreich installiert.${NC}"
+# Lokale Go umgebungsvariablen setzen
+cat > ~/.bash_profile << EOF
+export PATH=\$PATH:/usr/local/go/bin
+export GOROOT=/usr/local/go
+EOF
+source ~/.bash_profile
+
+# Als erste Go-Installation im PATH setzen
+echo -e "${YELLOW}Stellen sicher, dass die neue Go-Version verwendet wird...${NC}"
+# Vorübergehend PATH anpassen, um sicherzustellen, dass unsere neue Go-Version verwendet wird
+export PATH="/usr/local/go/bin:$PATH"
+
+# Go-Version überprüfen
+GO_ACTUAL_VERSION=$(/usr/local/go/bin/go version | grep -oP 'go version go\K[0-9\.]+')
+echo -e "${GREEN}Go ${GO_ACTUAL_VERSION} erfolgreich installiert und wird nun verwendet.${NC}"
 
 # Verzeichnisse erstellen
 echo -e "${YELLOW}Verzeichnisse vorbereiten...${NC}"
@@ -121,21 +136,21 @@ git clone https://github.com/nextX-AG/ai-network-analyser.git
 cd ai-network-analyser
 
 # go.mod korrigieren
-echo -e "${YELLOW}go.mod auf neueste Go-Version anpassen...${NC}"
-sed -i 's/go 1.18/go 1.22/' go.mod
-sed -i 's/go 1.24.2/go 1.22/' go.mod  # Für den Fall, dass es noch die alte Version enthält
+echo -e "${YELLOW}go.mod auf Go ${GO_VERSION} anpassen...${NC}"
+sed -i "s/go 1.22/go 1.20/" go.mod
+sed -i "s/go 1.24.2/go 1.20/" go.mod
 
-# Agent kompilieren
+# Agent kompilieren - Wichtig: Explizit den vollständigen Pfad zur neuen Go-Version verwenden
 echo -e "${YELLOW}Agent kompilieren...${NC}"
 echo "GOROOT: $GOROOT"
 echo "PATH: $PATH"
-echo "Go Version: $(go version)"
+echo "Go Version: $(/usr/local/go/bin/go version)"
 echo "Aktuelles Verzeichnis: $(pwd)"
 echo "Inhalt go.mod:"
 cat go.mod
 
-# Kompilieren mit verbose Ausgabe
-go build -v -o agent cmd/agent/main.go
+# Kompilieren mit vollständigem Pfad zur Go-Binary
+/usr/local/go/bin/go build -v -o agent cmd/agent/main.go
 
 if [ ! -f "agent" ]; then
   echo -e "${RED}Kompilierung fehlgeschlagen!${NC}"
