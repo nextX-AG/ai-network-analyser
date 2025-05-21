@@ -66,22 +66,49 @@ echo "Interface:    $INTERFACE"
 echo "Install Dir:  $INSTALL_DIR"
 echo
 
-# Abhängigkeiten installieren
-echo -e "${YELLOW}Abhängigkeiten installieren...${NC}"
+# Grundlegende Abhängigkeiten installieren
+echo -e "${YELLOW}Grundlegende Abhängigkeiten installieren...${NC}"
 apt-get update
-apt-get install -y golang-go libpcap-dev git build-essential
+apt-get install -y curl wget libpcap-dev git build-essential
 
-# Go-Version prüfen
-GO_VERSION=$(go version | grep -oP 'go\K[0-9]+\.[0-9]+')
-GO_VERSION_MAJOR=$(echo $GO_VERSION | cut -d. -f1)
-GO_VERSION_MINOR=$(echo $GO_VERSION | cut -d. -f2)
+# Go-Version prüfen und ggf. aktualisieren
+install_go() {
+  echo -e "${YELLOW}Installiere Go 1.18...${NC}"
+  cd /tmp
+  wget https://go.dev/dl/go1.18.10.linux-amd64.tar.gz
+  rm -rf /usr/local/go
+  tar -C /usr/local -xzf go1.18.10.linux-amd64.tar.gz
+  
+  # PATH setzen
+  echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/go.sh
+  chmod +x /etc/profile.d/go.sh
+  source /etc/profile.d/go.sh
+  
+  # Hinzufügen zum aktuellen PATH
+  export PATH=$PATH:/usr/local/go/bin
+  
+  echo -e "${GREEN}Go 1.18 wurde installiert.${NC}"
+}
 
-if [ "$GO_VERSION_MAJOR" -lt 1 ] || ([ "$GO_VERSION_MAJOR" -eq 1 ] && [ "$GO_VERSION_MINOR" -lt 16 ]); then
-  echo -e "${RED}Go Version $GO_VERSION ist zu alt. Version 1.16 oder höher wird benötigt.${NC}"
-  exit 1
+# Go installieren wenn nicht vorhanden oder zu alt
+if command -v go &> /dev/null; then
+  GO_VERSION=$(go version | grep -oP 'go\K[0-9]+\.[0-9]+')
+  GO_VERSION_MAJOR=$(echo $GO_VERSION | cut -d. -f1)
+  GO_VERSION_MINOR=$(echo $GO_VERSION | cut -d. -f2)
+
+  if [ "$GO_VERSION_MAJOR" -lt 1 ] || ([ "$GO_VERSION_MAJOR" -eq 1 ] && [ "$GO_VERSION_MINOR" -lt 16 ]); then
+    echo -e "${YELLOW}Go Version $GO_VERSION ist zu alt. Version 1.16 oder höher wird benötigt.${NC}"
+    install_go
+  else
+    echo -e "${GREEN}Go $GO_VERSION gefunden.${NC}"
+  fi
+else
+  echo -e "${YELLOW}Go ist nicht installiert.${NC}"
+  install_go
 fi
 
-echo -e "${GREEN}Go $GO_VERSION gefunden.${NC}"
+# Go-Version nach Installation/Update prüfen
+go version
 
 # Verzeichnisse erstellen
 echo -e "${YELLOW}Verzeichnisse vorbereiten...${NC}"
@@ -156,6 +183,7 @@ ProtectSystem=full
 ProtectHome=read-only
 PrivateTmp=true
 NoNewPrivileges=true
+Environment="PATH=/usr/local/go/bin:$PATH"
 
 [Install]
 WantedBy=multi-user.target
