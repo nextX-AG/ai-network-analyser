@@ -85,6 +85,11 @@ func NewCaptureAgent(config *config.Config) *CaptureAgent {
 func (a *CaptureAgent) Init() error {
 	a.capturer = packet.NewPcapCapturer(a.config)
 
+	// Sicherstellen, dass Interface im Status gesetzt ist
+	a.statusMutex.Lock()
+	a.status.Interface = a.config.Agent.Interface
+	a.statusMutex.Unlock()
+
 	// Heartbeat-Routine starten
 	go a.heartbeatRoutine()
 
@@ -156,8 +161,14 @@ func (a *CaptureAgent) Register() error {
 		return fmt.Errorf("failed to marshal agent info: %v", err)
 	}
 
+	// Überprüfe die Server-URL
+	if a.config.Agent.ServerURL == "" {
+		return fmt.Errorf("server URL is not configured")
+	}
+
 	// Registrierungs-URL zusammensetzen
 	url := fmt.Sprintf("%s/api/agents/register", a.config.Agent.ServerURL)
+	log.Printf("Sending registration request to: %s", url)
 
 	// HTTP-Request senden
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
@@ -173,13 +184,29 @@ func (a *CaptureAgent) Register() error {
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
+		// Status auf error setzen
+		a.statusMutex.Lock()
+		a.status.Status = "error"
+		a.status.Error = fmt.Sprintf("Verbindung zum Server fehlgeschlagen: %v", err)
+		a.statusMutex.Unlock()
 		return fmt.Errorf("failed to send registration request: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		// Status auf error setzen
+		a.statusMutex.Lock()
+		a.status.Status = "error"
+		a.status.Error = fmt.Sprintf("Server antwortete mit Status: %d", resp.StatusCode)
+		a.statusMutex.Unlock()
 		return fmt.Errorf("server returned non-OK status: %d", resp.StatusCode)
 	}
+
+	// Status auf idle setzen bei erfolgreicher Registrierung
+	a.statusMutex.Lock()
+	a.status.Status = "idle"
+	a.status.Error = ""
+	a.statusMutex.Unlock()
 
 	log.Printf("Agent registered successfully with server %s", a.config.Agent.ServerURL)
 	return nil

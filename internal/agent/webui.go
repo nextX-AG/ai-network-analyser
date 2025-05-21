@@ -469,16 +469,33 @@ func (a *CaptureAgent) configHandler(w http.ResponseWriter, r *http.Request) {
 func (a *CaptureAgent) saveConfig() error {
 	// Bestimmen des Konfigurationspfads
 	configPath := ""
-	if len(os.Args) > 1 {
-		// Falls der Konfigurationspfad als Argument übergeben wurde
-		configPath = os.Args[1]
-	} else {
-		// Standardpfad verwenden
-		execDir, err := os.Executable()
-		if err != nil {
-			return fmt.Errorf("konnte Ausführungspfad nicht ermitteln: %v", err)
+
+	// Nach dem Argument "--config" suchen
+	for i, arg := range os.Args {
+		if arg == "--config" && i+1 < len(os.Args) {
+			configPath = os.Args[i+1]
+			break
+		} else if strings.HasPrefix(arg, "--config=") {
+			configPath = strings.TrimPrefix(arg, "--config=")
+			break
 		}
-		configPath = filepath.Join(filepath.Dir(execDir), "configs", "agent.json")
+	}
+
+	// Wenn kein Konfigurationspfad gefunden wurde, Standardpfad verwenden
+	if configPath == "" {
+		// Standard-Konfigurationspfad
+		configPath = "/etc/ki-network-analyzer/agent.json"
+
+		// Alternatives Suchen: Executable-Verzeichnis
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			execDir, err := os.Executable()
+			if err == nil {
+				altPath := filepath.Join(filepath.Dir(execDir), "configs", "agent.json")
+				if _, err := os.Stat(altPath); err == nil {
+					configPath = altPath
+				}
+			}
+		}
 	}
 
 	// Konfigurationsverzeichnis erstellen, falls nicht vorhanden
@@ -566,10 +583,21 @@ func (a *CaptureAgent) restartHandler(w http.ResponseWriter, r *http.Request) {
 
 // registerHandler registriert den Agent manuell beim Hauptserver
 func (a *CaptureAgent) registerHandler(w http.ResponseWriter, r *http.Request) {
+	// Sicherstellen, dass die aktuelle Konfiguration verwendet wird
+	serverURL := a.config.Agent.ServerURL
+	log.Printf("Verwende Server-URL für manuelle Registrierung: %s", serverURL)
+
 	if err := a.Register(); err != nil {
+		log.Printf("Registrierung fehlgeschlagen: %v", err)
 		respondWithErrorJSON(w, fmt.Sprintf("Registrierung fehlgeschlagen: %v", err))
 		return
 	}
+
+	// Status auf "idle" setzen bei erfolgreicher Registrierung
+	a.statusMutex.Lock()
+	a.status.Status = "idle"
+	a.status.Error = ""
+	a.statusMutex.Unlock()
 
 	respondWithSuccessJSON(w, "Erfolgreich beim Hauptserver registriert", nil)
 }
