@@ -8,6 +8,10 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
+	"os"
+	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,12 +36,13 @@ type AgentStatus struct {
 
 // AgentInfo enthält die Registrierungsinformationen für den Server
 type AgentInfo struct {
-	Name       string   `json:"name"`
-	URL        string   `json:"url"`
-	Interfaces []string `json:"interfaces"`
-	Version    string   `json:"version"`
-	OS         string   `json:"os"`
-	Hostname   string   `json:"hostname"`
+	Name             string                   `json:"name"`
+	URL              string                   `json:"url"`
+	Interfaces       []string                 `json:"interfaces"`
+	InterfaceDetails []map[string]interface{} `json:"interface_details"`
+	Version          string                   `json:"version"`
+	OS               string                   `json:"os"`
+	Hostname         string                   `json:"hostname"`
 }
 
 // APIResponse ist eine generische API-Antwortstruktur
@@ -136,23 +141,110 @@ func (a *CaptureAgent) Register() error {
 	}
 
 	var interfaceNames []string
-	for _, iface := range ifaces {
-		if iface.Flags&net.FlagUp != 0 && iface.Flags&net.FlagLoopback == 0 {
-			interfaceNames = append(interfaceNames, iface.Name)
+	var interfaceDetails []map[string]interface{}
+
+	// Hostname für die Registrierung abrufen
+	hostname, _ := os.Hostname()
+	if hostname == "" {
+		hostname = a.config.Agent.Name
+	}
+
+	// Die tatsächliche IP-Adresse ermitteln, unter der der Agent erreichbar ist
+	host, port, err := parseListenAddress(a.config.Agent.Listen)
+	if err != nil {
+		return fmt.Errorf("failed to parse listen address: %v", err)
+	}
+
+	// Wenn der Host 0.0.0.0 ist, müssen wir die tatsächliche IP-Adresse ermitteln
+	actualIP := host
+	if host == "0.0.0.0" || host == "::" || host == "" {
+		// Die Server-URL parsen, um die Netzwerk-Route zu bestimmen
+		serverURL, err := url.Parse(a.config.Agent.ServerURL)
+		if err != nil {
+			log.Printf("Warnung: Konnte Server-URL nicht parsen: %v", err)
+		} else {
+			// Die tatsächliche IP-Adresse ermitteln, die zum Server routet
+			actualIP, err = getOutboundIP(serverURL.Hostname())
+			if err != nil {
+				log.Printf("Warnung: Konnte ausgehende IP nicht ermitteln: %v", err)
+				// Fallback auf eine nicht-lokale IP
+				actualIP = getFirstNonLocalhostIP()
+			}
 		}
 	}
 
-	// Hostname für die Registrierung abrufen
-	hostname, _ := a.config.Agent.Name, ""
+	// Die vollständige URL des Agents erstellen
+	agentURL := fmt.Sprintf("http://%s:%s", actualIP, port)
+
+	// Detaillierte Schnittstelleninformationen sammeln
+	for _, iface := range ifaces {
+		// Lokale Loopback-Schnittstellen und inaktive Schnittstellen überspringen
+		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		// IP-Adressen der Schnittstelle abrufen
+		addrs, err := iface.Addrs()
+		if err != nil {
+			log.Printf("Error getting addresses for interface %s: %v", iface.Name, err)
+			continue
+		}
+
+		// IP-Adressen sammeln
+		var ipStrings []string
+		for _, addr := range addrs {
+			ipNet, ok := addr.(*net.IPNet)
+			if ok && !ipNet.IP.IsLoopback() {
+				if ipNet.IP.To4() != nil || ipNet.IP.To16() != nil {
+					ipStrings = append(ipStrings, ipNet.IP.String())
+				}
+			}
+		}
+
+		// Bridge-Status prüfen (Linux-spezifisch)
+		isBridge := false
+		bridgePorts := ""
+
+		// Bridge-Schnittstellen erkennen (Linux-spezifisch)
+		if _, err := os.Stat(fmt.Sprintf("/sys/class/net/%s/bridge", iface.Name)); err == nil {
+			isBridge = true
+
+			// Bridge-Ports auslesen
+			files, err := os.ReadDir(fmt.Sprintf("/sys/class/net/%s/brif", iface.Name))
+			if err == nil {
+				var ports []string
+				for _, file := range files {
+					ports = append(ports, file.Name())
+				}
+				bridgePorts = strings.Join(ports, ", ")
+			}
+		}
+
+		// Schnittstelle zur Liste hinzufügen
+		interfaceNames = append(interfaceNames, iface.Name)
+
+		// Detaillierte Informationen hinzufügen
+		ifaceDetails := map[string]interface{}{
+			"name":         iface.Name,
+			"mac":          iface.HardwareAddr.String(),
+			"ips":          ipStrings,
+			"is_bridge":    isBridge,
+			"bridge_ports": bridgePorts,
+			"flags":        iface.Flags.String(),
+			"mtu":          iface.MTU,
+		}
+		interfaceDetails = append(interfaceDetails, ifaceDetails)
+	}
 
 	// AgentInfo erstellen
 	info := AgentInfo{
-		Name:       a.config.Agent.Name,
-		URL:        fmt.Sprintf("http://%s", a.config.Agent.Listen),
-		Interfaces: interfaceNames,
-		Version:    "0.1.0", // TODO: aus Versionsdatei lesen
-		OS:         "linux", // TODO: dynamisch ermitteln
-		Hostname:   hostname,
+		Name:             a.config.Agent.Name,
+		URL:              agentURL,
+		Interfaces:       interfaceNames,
+		InterfaceDetails: interfaceDetails,
+		Version:          "0.1.0", // TODO: aus Versionsdatei lesen
+		OS:               runtime.GOOS,
+		Hostname:         hostname,
 	}
 
 	// JSON-Kodierung
@@ -167,11 +259,11 @@ func (a *CaptureAgent) Register() error {
 	}
 
 	// Registrierungs-URL zusammensetzen
-	url := fmt.Sprintf("%s/api/agents/register", a.config.Agent.ServerURL)
-	log.Printf("Sending registration request to: %s", url)
+	registerURL := fmt.Sprintf("%s/api/agents/register", a.config.Agent.ServerURL)
+	log.Printf("Sending registration request to: %s", registerURL)
 
 	// HTTP-Request senden
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", registerURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %v", err)
 	}
@@ -212,6 +304,69 @@ func (a *CaptureAgent) Register() error {
 	return nil
 }
 
+// Hilfsfunktionen für die IP-Adressermittlung
+
+// parseListenAddress zerlegt eine Adresse im Format "host:port" oder ":port"
+func parseListenAddress(addr string) (host, port string, err error) {
+	// Standardwert für Port setzen, falls nicht angegeben
+	if !strings.Contains(addr, ":") {
+		return addr, "8090", nil
+	}
+
+	host, port, err = net.SplitHostPort(addr)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Wenn kein Host angegeben ist (z.B. ":8090"), leeren String zurückgeben
+	if host == "" {
+		host = "0.0.0.0"
+	}
+
+	return host, port, nil
+}
+
+// getOutboundIP ermittelt die lokale IP-Adresse, die für eine Verbindung nach außen verwendet wird
+func getOutboundIP(destination string) (string, error) {
+	// Wenn das Ziel keine gültige Adresse ist, verwenden wir einen öffentlichen DNS-Server
+	if net.ParseIP(destination) == nil && !strings.Contains(destination, ".") {
+		destination = "8.8.8.8:80" // Google DNS
+	} else if !strings.Contains(destination, ":") {
+		// Port hinzufügen, wenn keiner angegeben ist
+		destination = destination + ":80"
+	}
+
+	// UDP-Verbindung herstellen (wird nicht wirklich aufgebaut)
+	conn, err := net.Dial("udp", destination)
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+
+	// Die lokale Adresse der Verbindung ermitteln
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP.String(), nil
+}
+
+// getFirstNonLocalhostIP ermittelt die erste nicht-lokale IP-Adresse
+func getFirstNonLocalhostIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "127.0.0.1"
+	}
+
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+
+	return "127.0.0.1"
+}
+
 // Unregister meldet den Agent vom Hauptserver ab
 func (a *CaptureAgent) Unregister() error {
 	// TODO: Implementieren Sie die Abmeldung
@@ -224,6 +379,7 @@ func (a *CaptureAgent) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/status", a.statusHandler).Methods("GET")
 	router.HandleFunc("/capture/start", a.startCaptureHandler).Methods("POST")
 	router.HandleFunc("/capture/stop", a.stopCaptureHandler).Methods("POST")
+	router.HandleFunc("/capture/set-interface", a.setInterfaceHandler).Methods("POST")
 	router.HandleFunc("/ws", a.websocketHandler)
 
 	// Weitere Routen hier registrieren...
@@ -486,5 +642,80 @@ func respondWithError(w http.ResponseWriter, statusCode int, message string) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(response)
+}
+
+// setInterfaceHandler setzt die aktive Schnittstelle für die Datenerfassung
+func (a *CaptureAgent) setInterfaceHandler(w http.ResponseWriter, r *http.Request) {
+	// Anfrage-Body parsen
+	var req struct {
+		Interface string `json:"interface"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response := APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Fehler beim Parsen der Anfrage: %v", err),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Prüfen, ob die gewünschte Schnittstelle existiert
+	validInterface := false
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		response := APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Fehler beim Auflisten der Netzwerkschnittstellen: %v", err),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	for _, iface := range ifaces {
+		if iface.Name == req.Interface {
+			validInterface = true
+			break
+		}
+	}
+
+	if !validInterface {
+		response := APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Netzwerkschnittstelle '%s' nicht gefunden", req.Interface),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Die Schnittstelle in der Konfiguration aktualisieren
+	a.config.Agent.Interface = req.Interface
+
+	// Auch den Status aktualisieren
+	a.statusMutex.Lock()
+	a.status.Interface = req.Interface
+	a.statusMutex.Unlock()
+
+	// Die Konfiguration speichern
+	if err := a.saveConfig(); err != nil {
+		log.Printf("Warnung: Fehler beim Speichern der Konfiguration nach Interface-Änderung: %v", err)
+	}
+
+	// Auch dem Capturer mitteilen, dass sich die Schnittstelle geändert hat
+	a.capturer.UpdateInterface(req.Interface)
+
+	// Erfolgreiche Antwort senden
+	response := APIResponse{
+		Success: true,
+		Message: fmt.Sprintf("Netzwerkschnittstelle erfolgreich auf '%s' gesetzt", req.Interface),
+		Data: map[string]string{
+			"interface": req.Interface,
+		},
+	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }

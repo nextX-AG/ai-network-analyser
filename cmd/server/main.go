@@ -312,6 +312,7 @@ func registerAPIHandlers(router *mux.Router, capturer *packet.PcapCapturer, cfg 
 	apiRouter.HandleFunc("/agents/heartbeat", api.HeartbeatHandler).Methods("POST")
 	apiRouter.HandleFunc("/agents/capture/start", api.StartAgentCaptureHandler).Methods("POST")
 	apiRouter.HandleFunc("/agents/capture/stop", api.StopAgentCaptureHandler).Methods("POST")
+	apiRouter.HandleFunc("/agents/set-interface", api.SetInterfaceHandler).Methods("POST")
 
 	// Status-Prüfung für Agents starten
 	go api.CheckAgentsStatus()

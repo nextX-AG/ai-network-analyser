@@ -12,24 +12,27 @@ import (
 
 // RemoteAgent enthält Informationen zu einem Remote-Capture-Agent
 type RemoteAgent struct {
-	Name       string    `json:"name"`
-	URL        string    `json:"url"`
-	Status     string    `json:"status"` // "online", "offline", "capturing"
-	LastSeen   time.Time `json:"last_seen"`
-	Interfaces []string  `json:"interfaces"`
-	Version    string    `json:"version"`
-	OS         string    `json:"os"`
-	Hostname   string    `json:"hostname"`
+	Name             string                   `json:"name"`
+	URL              string                   `json:"url"`
+	Status           string                   `json:"status"` // "online", "offline", "capturing"
+	LastSeen         time.Time                `json:"last_seen"`
+	Interfaces       []string                 `json:"interfaces"`
+	InterfaceDetails []map[string]interface{} `json:"interface_details"`
+	ActiveInterface  string                   `json:"active_interface"`
+	Version          string                   `json:"version"`
+	OS               string                   `json:"os"`
+	Hostname         string                   `json:"hostname"`
 }
 
 // AgentRegistration enthält die Informationen für die Agentenregistrierung
 type AgentRegistration struct {
-	Name       string   `json:"name"`
-	URL        string   `json:"url"`
-	Interfaces []string `json:"interfaces"`
-	Version    string   `json:"version"`
-	OS         string   `json:"os"`
-	Hostname   string   `json:"hostname"`
+	Name             string                   `json:"name"`
+	URL              string                   `json:"url"`
+	Interfaces       []string                 `json:"interfaces"`
+	InterfaceDetails []map[string]interface{} `json:"interface_details"`
+	Version          string                   `json:"version"`
+	OS               string                   `json:"os"`
+	Hostname         string                   `json:"hostname"`
 }
 
 var (
@@ -59,14 +62,15 @@ func RegisterAgentHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Neuen Agent erstellen oder bestehenden aktualisieren
 	agent := &RemoteAgent{
-		Name:       reg.Name,
-		URL:        reg.URL,
-		Status:     "online",
-		LastSeen:   time.Now(),
-		Interfaces: reg.Interfaces,
-		Version:    reg.Version,
-		OS:         reg.OS,
-		Hostname:   reg.Hostname,
+		Name:             reg.Name,
+		URL:              reg.URL,
+		Status:           "online",
+		LastSeen:         time.Now(),
+		Interfaces:       reg.Interfaces,
+		InterfaceDetails: reg.InterfaceDetails,
+		Version:          reg.Version,
+		OS:               reg.OS,
+		Hostname:         reg.Hostname,
 	}
 
 	// In der Map speichern
@@ -337,4 +341,87 @@ func CheckAgentsStatus() {
 		}
 		remoteAgentsMutex.Unlock()
 	}
+}
+
+// SetInterfaceHandler verarbeitet Anfragen zum Setzen der aktiven Schnittstellte auf einem Agent
+func SetInterfaceHandler(w http.ResponseWriter, r *http.Request) {
+	// Request-Body parsen
+	var req struct {
+		Name      string `json:"name"`      // Name des Agents
+		Interface string `json:"interface"` // Name der zu aktivierenden Schnittstelle
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Ungültiges Anfrageformat")
+		return
+	}
+
+	// Agent-Namen und Schnittstelle validieren
+	if req.Name == "" || req.Interface == "" {
+		respondWithError(w, http.StatusBadRequest, "Agent-Name und Schnittstelle sind erforderlich")
+		return
+	}
+
+	// Agent in der Map finden
+	remoteAgentsMutex.RLock()
+	agent, exists := remoteAgents[req.Name]
+	remoteAgentsMutex.RUnlock()
+
+	if !exists {
+		respondWithError(w, http.StatusNotFound, "Agent nicht gefunden")
+		return
+	}
+
+	// Überprüfen, ob die angegebene Schnittstelle auf dem Agent existiert
+	interfaceExists := false
+	for _, ifName := range agent.Interfaces {
+		if ifName == req.Interface {
+			interfaceExists = true
+			break
+		}
+	}
+
+	if !interfaceExists {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Schnittstelle '%s' existiert nicht auf Agent '%s'", req.Interface, req.Name))
+		return
+	}
+
+	// Anfrage an den Agent senden, um die Schnittstelle zu aktivieren
+	setInterfaceReq := map[string]string{
+		"interface": req.Interface,
+	}
+	jsonData, err := json.Marshal(setInterfaceReq)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Fehler bei der JSON-Kodierung")
+		return
+	}
+
+	// URL zusammensetzen
+	url := fmt.Sprintf("%s/capture/set-interface", agent.URL)
+
+	// HTTP-Request senden
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+	resp, err := httpClient.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Fehler bei der Kommunikation mit dem Agent: %v", err))
+		return
+	}
+	defer resp.Body.Close()
+
+	// Antwort des Agents parsen
+	var agentResp APIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&agentResp); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Fehler beim Parsen der Agent-Antwort")
+		return
+	}
+
+	// Status des Agents aktualisieren
+	if agentResp.Success {
+		remoteAgentsMutex.Lock()
+		agent.ActiveInterface = req.Interface
+		remoteAgentsMutex.Unlock()
+	}
+
+	// Antwort des Agents weiterleiten
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(agentResp)
 }
