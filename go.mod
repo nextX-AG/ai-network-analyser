@@ -1,6 +1,6 @@
 module github.com/sayedamirkarim/ki-network-analyzer
 
-go 1.18
+go 1.22
 
 require (
 	github.com/google/gopacket v1.1.19

@@ -71,28 +71,29 @@ echo -e "${YELLOW}Grundlegende Abhängigkeiten installieren...${NC}"
 apt-get update
 apt-get install -y curl wget libpcap-dev git build-essential
 
-# Go 1.18 installieren (unabhängig von vorhandener Version)
-echo -e "${YELLOW}Go 1.18 installieren...${NC}"
+# Neueste Go-Version (1.22) installieren
+echo -e "${YELLOW}Go 1.22 installieren...${NC}"
 cd /tmp
-wget -q https://go.dev/dl/go1.18.10.linux-amd64.tar.gz
-if [ ! -f go1.18.10.linux-amd64.tar.gz ]; then
-  echo -e "${RED}Fehler beim Herunterladen von Go 1.18.${NC}"
+wget -q https://go.dev/dl/go1.22.0.linux-amd64.tar.gz
+if [ ! -f go1.22.0.linux-amd64.tar.gz ]; then
+  echo -e "${RED}Fehler beim Herunterladen von Go 1.22.${NC}"
   exit 1
 fi
 
 echo -e "${YELLOW}Vorhandene Go-Installation entfernen (falls vorhanden)...${NC}"
 rm -rf /usr/local/go
 
-echo -e "${YELLOW}Go 1.18 extrahieren...${NC}"
-tar -C /usr/local -xzf go1.18.10.linux-amd64.tar.gz
+echo -e "${YELLOW}Go 1.22 extrahieren...${NC}"
+tar -C /usr/local -xzf go1.22.0.linux-amd64.tar.gz
 
-# PATH setzen
+# Systemweiten PATH setzen
 echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/go.sh
 chmod +x /etc/profile.d/go.sh
 source /etc/profile.d/go.sh
 
-# Hinzufügen zum aktuellen PATH
+# Auch für den aktuellen Prozess setzen
 export PATH=$PATH:/usr/local/go/bin
+export GOROOT=/usr/local/go
 
 # Go-Version überprüfen
 if ! command -v go &> /dev/null; then
@@ -119,24 +120,21 @@ fi
 git clone https://github.com/nextX-AG/ai-network-analyser.git
 cd ai-network-analyser
 
-# go.mod korrigieren, falls notwendig
-if grep -q "go 1.24" go.mod; then
-  echo -e "${YELLOW}Korrigiere go.mod auf Go 1.18...${NC}"
-  sed -i 's/go 1.24.2/go 1.18/' go.mod
-fi
+# go.mod korrigieren
+echo -e "${YELLOW}go.mod auf neueste Go-Version anpassen...${NC}"
+sed -i 's/go 1.18/go 1.22/' go.mod
+sed -i 's/go 1.24.2/go 1.22/' go.mod  # Für den Fall, dass es noch die alte Version enthält
 
 # Agent kompilieren
 echo -e "${YELLOW}Agent kompilieren...${NC}"
-# Debugging-Info für Kompilierungsprobleme
-GOROOT=/usr/local/go
 echo "GOROOT: $GOROOT"
 echo "PATH: $PATH"
 echo "Go Version: $(go version)"
-echo "pwd: $(pwd)"
+echo "Aktuelles Verzeichnis: $(pwd)"
 echo "Inhalt go.mod:"
 cat go.mod
 
-# Kompilieren mit debug-Ausgabe
+# Kompilieren mit verbose Ausgabe
 go build -v -o agent cmd/agent/main.go
 
 if [ ! -f "agent" ]; then
