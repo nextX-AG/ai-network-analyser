@@ -47,12 +47,16 @@
 - [x] Konfigurationsmanagement für Remote-Agents implementieren
 - [x] UI-Integration für Remote-Capture-Verwaltung
 - [x] Dokumentation für Remote-Agent-Installation und Deployment erstellen
+- [x] **Webinterface für Agents** - Implementierung eines Konfigurations-Webinterfaces direkt im Agent
+- [x] **Automatische Erkennung und Registrierung** - Zero-Config-Ansatz mit automatischer Erkennung
+- [x] **Bridge-Optimierung für MITM-Monitoring** - Spezielle Unterstützung für Bridge-Traffic-Analyse
+- [ ] **Deployment-Optimierungen** - Docker-Container und optimierte Systemd-Services
 - [ ] Authentifizierung und Sicherheitskonzept für Remote-Agents verbessern
 - [ ] Automatische Erkennung von Remote-Agents im Netzwerk
 - [ ] Leistungsoptimierung für datenintensive Übertragungen
 - [ ] Offline-Modus für Agents mit späterem Sync implementieren
 - [ ] Automatische Agent-Updates ermöglichen
-- [ ] Systemd-Service-Templates für einfache Bereitstellung
+- [x] Systemd-Service-Templates für einfache Bereitstellung
 
 ## Speech2Text-Modul
 - [ ] Integration von Whisper.cpp als lokale Speech2Text-Engine

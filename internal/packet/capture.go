@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -102,21 +103,74 @@ func (c *PcapCapturer) OpenPcapFile(path string) error {
 // OpenLiveCapture öffnet eine Live-Netzwerkschnittstelle für die Erfassung
 func (c *PcapCapturer) OpenLiveCapture(interfaceName string) error {
 	var err error
-	c.handle, err = pcap.OpenLive(
-		interfaceName,
-		int32(c.config.SnapLen),
-		c.config.PromiscMode,
-		pcap.BlockForever,
-	)
-	if err != nil {
-		return fmt.Errorf("Fehler beim Öffnen der Netzwerkschnittstelle: %w", err)
+
+	// Prüfen, ob es sich um eine Bridge-Schnittstelle handelt
+	isBridge := false
+	if _, err := os.Stat(fmt.Sprintf("/sys/class/net/%s/bridge", interfaceName)); err == nil {
+		isBridge = true
+		fmt.Printf("Bridge-Interface erkannt: %s\n", interfaceName)
+
+		// Für Bridge-Interfaces: Promisc-Modus erzwingen und BufferSize erhöhen
+		c.config.PromiscMode = true
+
+		// Buffer-Größe für Bridge-Interfaces erhöhen
+		if c.config.BufferSize < 8*1024*1024 {
+			c.config.BufferSize = 8 * 1024 * 1024 // 8MB für Bridge-Interfaces
+			fmt.Printf("Buffer-Größe für Bridge-Interface auf %d Bytes erhöht\n", c.config.BufferSize)
+		}
 	}
 
+	// Konfigurieren der pcap-Bibliothek für Live-Capture
+	inactive, err := pcap.NewInactiveHandle(interfaceName)
+	if err != nil {
+		return fmt.Errorf("Fehler beim Erstellen des inaktiven Handles: %w", err)
+	}
+	defer inactive.CleanUp()
+
+	// SnapLen setzen (maximale Paketgröße)
+	if err := inactive.SetSnapLen(c.config.SnapLen); err != nil {
+		return fmt.Errorf("Fehler beim Setzen von SnapLen: %w", err)
+	}
+
+	// Promisc-Modus setzen
+	if err := inactive.SetPromisc(c.config.PromiscMode); err != nil {
+		return fmt.Errorf("Fehler beim Setzen des Promisc-Modus: %w", err)
+	}
+
+	// Timeout setzen (BlockForever = -1)
+	if err := inactive.SetTimeout(pcap.BlockForever); err != nil {
+		return fmt.Errorf("Fehler beim Setzen des Timeouts: %w", err)
+	}
+
+	// Buffer-Größe setzen
+	if err := inactive.SetBufferSize(c.config.BufferSize); err != nil {
+		return fmt.Errorf("Fehler beim Setzen der Buffer-Größe: %w", err)
+	}
+
+	// Für Bridge-Interfaces: Immediate-Modus aktivieren (falls verfügbar)
+	if isBridge {
+		// Immediate-Modus ist plattformspezifisch, daher mit Fehlerbehandlung
+		if err := inactive.SetImmediateMode(true); err != nil {
+			// Fehler nur loggen, nicht abbrechen
+			fmt.Printf("Warnung: Immediate-Modus konnte nicht aktiviert werden: %v\n", err)
+		}
+	}
+
+	// Handle aktivieren
+	c.handle, err = inactive.Activate()
+	if err != nil {
+		return fmt.Errorf("Fehler beim Aktivieren des Handles: %w", err)
+	}
+
+	// BPF-Filter setzen, falls konfiguriert
 	if c.config.Filter != "" {
 		if err := c.handle.SetBPFFilter(c.config.Filter); err != nil {
 			return fmt.Errorf("Fehler beim Setzen des BPF-Filters: %w", err)
 		}
 	}
+
+	fmt.Printf("Live-Capture auf Interface %s gestartet (Promisc: %v, SnapLen: %d, BufferSize: %d)\n",
+		interfaceName, c.config.PromiscMode, c.config.SnapLen, c.config.BufferSize)
 
 	return nil
 }

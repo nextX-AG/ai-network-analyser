@@ -183,9 +183,11 @@ Der KI-Netzwerk-Analyzer ist ein modulares System zur Analyse von Netzwerkverkeh
 Die Remote-Capture-Funktionalität basiert auf einem Agent-Server-Modell:
 
 1. **Capture-Agent (auf Remote-Gerät)**
-   - Leichtgewichtiger Go-Dienst, der auf Edge-Geräten wie Raspberry Pi läuft
+   - Leichtgewichtiger Go-Dienst, der auf Edge-Geräten wie Raspberry Pi oder UP Board läuft
    - Direkter Zugriff auf Netzwerkschnittstellen über libpcap/gopacket
-   - Minimale lokale Verarbeitung und Filterung
+   - Integriertes Webinterface zur Konfiguration und Verwaltung
+   - Automatische Erkennung und Registrierung beim Hauptserver
+   - Spezialisierte Bridge-Unterstützung für MITM-Monitoring
    - REST-API für Konfiguration und Verwaltung
    - WebSocket-Endpunkt für Paket-Streaming
 
@@ -198,12 +200,35 @@ Die Remote-Capture-Funktionalität basiert auf einem Agent-Server-Modell:
    - REST-API für Konfiguration, Start/Stop und Status
    - WebSocket für effizientes Echtzeit-Streaming von Paketdaten
    - Optimierte Datenübertragung (Serialisierung, Kompression)
-   - Authentifizierung über API-Keys oder Token
+   - Authentifizierung über API-Keys
 
 4. **Deployment-Optionen**
    - Standalone-Binary für Edge-Geräte (Go's Cross-Compilation)
-   - Docker-Container für einfache Bereitstellung
-   - Automatische Aktualisierung von Remote-Agents
+   - Systemd-Service für automatischen Start und Überwachung
+   - Konfigurierbare Bridge-Schnittstellen für MITM-Monitoring
+
+### Agent Web-Interface
+
+Der Remote-Agent verfügt über ein eingebautes Web-Interface, das folgende Funktionen bietet:
+- Status-Übersicht (Paketzähler, Verbindungsstatus, Schnittstelleninformationen)
+- Konfiguration (Server-URL, Schnittstellenauswahl, API-Key)
+- Netzwerkschnittstellen-Übersicht mit Erkennung von Bridge-Interfaces
+- Aktions-Buttons (Agent-Neustart, Server-Registrierung)
+
+### Automatische Erkennung und Registrierung
+
+Der Agent verfügt über eine automatische Registrierungsfunktion:
+- Beim Start versucht der Agent, sich automatisch beim konfigurierten Server zu registrieren
+- Erfasst und übermittelt Informationen zu allen verfügbaren Netzwerkschnittstellen
+- Fallback auf manuelle Registrierung via Web-Interface
+
+### Bridge-Optimierung für MITM-Monitoring
+
+Spezielle Unterstützung für Bridge-Schnittstellen:
+- Automatische Erkennung von Bridge-Interfaces im Betriebssystem
+- Optimierte Paketerfassung mit erhöhten Buffer-Größen für Bridge-Traffic
+- Konfiguration des Promisc-Modus und Immediate-Mode für bessere Leistung
+- Dokumentierte Anleitung zur Einrichtung von Netzwerk-Bridges für effektives MITM-Monitoring
 
 Diese Architektur ermöglicht ein skalierbares Netzwerk von Erfassungspunkten, die strategisch in einer Infrastruktur platziert werden können, während die zentrale Anwendung alle Daten aggregiert und analysiert.
 

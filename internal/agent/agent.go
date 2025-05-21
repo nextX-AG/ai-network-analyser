@@ -88,6 +88,37 @@ func (a *CaptureAgent) Init() error {
 	// Heartbeat-Routine starten
 	go a.heartbeatRoutine()
 
+	// Automatische Registrierung versuchen, wenn eine Server-URL konfiguriert ist
+	if a.config.Agent.ServerURL != "" {
+		log.Printf("Versuche automatische Registrierung beim Server: %s", a.config.Agent.ServerURL)
+		go func() {
+			// Kurz warten, um sicherzustellen, dass der Server gestartet ist
+			time.Sleep(2 * time.Second)
+
+			// Registrierung versuchen
+			if err := a.Register(); err != nil {
+				log.Printf("Automatische Registrierung fehlgeschlagen: %v", err)
+				log.Println("Der Agent wird im Offline-Modus ausgeführt. Verwenden Sie die Web-UI zur manuellen Registrierung.")
+
+				// Status aktualisieren
+				a.statusMutex.Lock()
+				a.status.Status = "error"
+				a.status.Error = fmt.Sprintf("Registrierung fehlgeschlagen: %v", err)
+				a.statusMutex.Unlock()
+			} else {
+				log.Println("Automatische Registrierung beim Server erfolgreich")
+
+				// Status aktualisieren
+				a.statusMutex.Lock()
+				a.status.Status = "idle"
+				a.status.Error = ""
+				a.statusMutex.Unlock()
+			}
+		}()
+	} else {
+		log.Println("Keine Server-URL konfiguriert. Verwenden Sie die Web-UI zur manuellen Konfiguration und Registrierung.")
+	}
+
 	return nil
 }
 

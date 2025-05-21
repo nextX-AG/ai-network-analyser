@@ -1,0 +1,21 @@
+[Unit]
+Description=KI-Netzwerk-Analyzer Remote Agent
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/ki-network-analyzer
+ExecStart=/opt/ki-network-analyzer/agent --config /etc/ki-network-analyzer/agent.json
+Restart=always
+RestartSec=5
+# Wichtig für die Packet-Capture-Berechtigungen
+AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
+# Sicherheitseinstellungen
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target 
