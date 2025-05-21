@@ -38,6 +38,15 @@
 - [ ] Optimierung für große PCAP-Dateien
 - [ ] Export-Funktionen für gefilterte Paketgruppen
 
+## Remote-Capture-System
+- [ ] Leichtgewichtigen Capture-Agent für Remote-Geräte (z.B. Raspberry Pi) implementieren
+- [ ] REST-API für Konfiguration und Steuerung des Remote-Agents entwickeln
+- [ ] WebSocket-Streaming von erfassten Paketen zum Hauptsystem implementieren
+- [ ] Authentifizierung und Sicherheitskonzept für Remote-Agents erstellen
+- [ ] Konfigurationsmanagement für mehrere Remote-Agents implementieren
+- [ ] UI-Integration für Remote-Capture-Verwaltung
+- [ ] Automatische Erkennung von Remote-Agents im Netzwerk
+
 ## Speech2Text-Modul
 - [ ] Integration von Whisper.cpp als lokale Speech2Text-Engine
 - [ ] REST-Endpunkt für Sprachaufnahme und -verarbeitung

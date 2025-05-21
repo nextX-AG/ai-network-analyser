@@ -11,6 +11,7 @@ Der KI-Netzwerk-Analyzer ist eine modulare Plattform zur intelligenten Analyse v
 - Analyse von Gateway-bezogenem Verkehr (DHCP, DNS, ARP, NAT)
 - Visualisierung von Netzwerkereignissen mit Gateway-Fokus
 - Integration von KI für erweiterte Musteranalyse (in zukünftigen Versionen)
+- Remote-Capture-Funktionalität für verteilte Netzwerkerfassung
 
 ## Funktionen des MVP
 
@@ -21,6 +22,23 @@ Die aktuelle Version (MVP) bietet folgende Kernfunktionen:
 - Identifikation von DHCP-, DNS- und ARP-bezogenen Gateway-Interaktionen
 - Zusammenfassung wichtiger Gateway-Aktivitäten
 - Benutzerfreundliche Web-Oberfläche
+- Echtzeit-Netzwerkerfassung und -Analyse
+
+## Remote-Capture-System
+
+Der KI-Netzwerk-Analyzer unterstützt (oder wird in Kürze unterstützen) ein verteiltes Erfassungsystem:
+
+### Funktionsweise
+- Leichte Capture-Agents können auf kleinen Linux-Geräten (z.B. Raspberry Pi) installiert werden
+- Diese Agents erfassen Netzwerkverkehr an strategischen Punkten im Netzwerk
+- Kommunikation zwischen Agents und Hauptsystem über REST-API und WebSockets
+- Zentrale Visualisierung und Analyse aller erfassten Daten
+
+### Vorteile
+- Erfassung an mehreren Netzwerkpunkten gleichzeitig
+- Analyse von Gateway-Verkehr aus verschiedenen Perspektiven
+- Geringer Ressourcenbedarf auf Erfassungsgeräten
+- Einfache Skalierung durch Hinzufügen neuer Erfassungspunkte
 
 ## Installation
 
@@ -64,6 +82,8 @@ Die aktuelle Version (MVP) bietet folgende Kernfunktionen:
 - `--pcap`: Pfad zu einer PCAP-Datei, die sofort analysiert werden soll (optional)
 - `--listen`: Adresse und Port zum Lauschen, z.B. `--listen=0.0.0.0:8080` (überschreibt Konfiguration)
 - `--debug`: Debug-Modus aktivieren
+- `--live`: Aktiviert Live-Capture-Modus
+- `--interface`: Netzwerkschnittstelle für Live-Capture
 
 ### Web-Oberfläche
 
@@ -72,6 +92,13 @@ Nach dem Start ist die Web-Oberfläche unter http://localhost:9090 erreichbar (a
 1. Navigieren Sie zur Web-Oberfläche
 2. Laden Sie eine PCAP-Datei hoch oder ziehen Sie sie per Drag & Drop
 3. Die Datei wird automatisch analysiert und Gateway-relevante Informationen werden angezeigt
+
+### Live-Capture
+
+1. Wechseln Sie zum "Live-Capture"-Tab in der Web-Oberfläche
+2. Wählen Sie eine Netzwerkschnittstelle aus der Dropdown-Liste
+3. Klicken Sie auf "Capture starten", um die Echtzeit-Analyse zu beginnen
+4. Beobachten Sie Gateway-Traffic in Echtzeit
 
 ## Gateway-Analyse-Funktionen
 
@@ -89,6 +116,9 @@ Das System analysiert folgende Gateway-relevante Protokolle und Aktivitäten:
 - `GET /api/gateways`: Liste erkannter Gateways abrufen
 - `GET /api/traffic/gateway`: Gateway-Verkehrsstatistiken
 - `GET /api/events/gateway`: Gateway-relevante Ereignisse
+- `GET /api/interfaces`: Verfügbare Netzwerkschnittstellen
+- `POST /api/live/start`: Live-Erfassung starten
+- `POST /api/live/stop`: Live-Erfassung stoppen
 
 ## Projektstruktur
 
@@ -116,6 +146,7 @@ ai-network-analyser/
 - Netzwerkgraph-Visualisierung mit Gateway-Fokus
 - Echtzeitanalyse von laufendem Netzwerkverkehr
 - Speicherung historischer Daten in einer Datenbank
+- Implementierung des Remote-Capture-Systems für verteilte Erfassung
 
 ## Mitwirken
 

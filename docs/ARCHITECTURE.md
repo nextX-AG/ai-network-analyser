@@ -142,3 +142,113 @@ Dies ist das initiale Architektur-Canvas für ein modernes, modular aufgebautes 
 * MVP-orientiert starten, Features dann gezielt und modular erweitern
 * Alles wird so dokumentiert, dass später Multi-User/Cloud und AQEA möglich sind
 * **Kein Vendor-Lock-In, volle Kontrolle über Daten und Erweiterungen**
+
+## Überblick
+Der KI-Netzwerk-Analyzer ist ein modulares System zur Analyse von Netzwerkverkehr, das mit KI-Integration und Schwerpunkt auf Gateway-Analyse arbeitet. Die Anwendung kombiniert Netzwerkpaketkenntnisse mit moderner KI-Technologie und ermöglicht es Benutzern, Netzwerkereignisse zu markieren und mit Metadaten zu versehen, sei es manuell oder durch KI-Unterstützung.
+
+## Hauptmodule und Komponenten
+
+### Core Module
+- **Paketerfassung (PCAP/TCPDUMP)**: Lesen und Analysieren von PCAP-Dateien, Live-Erfassung von Netzwerkpaketen
+- **Gateway-Analyse**: Erkennung und Analyse von Gateway-relevantem Netzwerkverkehr
+- **Echtzeit-Monitoring**: Live-Erfassung und Analyse von Netzwerkpaketen über WebSockets
+
+### Remote-Capture-System
+- **Capture-Agent**: Leichtgewichtiger Dienst für Remote-Geräte (z.B. Raspberry Pi) zur Netzwerkerfassung
+- **Agent-API**: REST-Schnittstelle zur Konfiguration und Steuerung von Remote-Erfassungsgeräten
+- **Stream-Protokoll**: Effizientes WebSocket-basiertes Protokoll zum Übertragen von Paketdaten
+- **Multi-Agent-Management**: Verwaltung mehrerer Erfassungsgeräte an verschiedenen Netzwerkpunkten
+
+### Erweiterte Funktionen
+- **Speech2Text**: Transkription von Sprachnotizen für Ereignismarkierungen
+- **KI-Annotation**: Automatische Analyse und Annotation von Netzwerkpaketen mit LLMs
+- **Timeline-Visualisierung**: Graphische Darstellung von Netzwerkereignissen auf einer Zeitleiste
+- **Ereignismarkierung**: Manuelle und automatische Markierung interessanter Netzwerkereignisse
+
+## Architektonische Muster
+
+### Backend (Go)
+- **Modulare Struktur**: Klare Trennung von Zuständigkeiten durch strukturierte Pakete
+- **Schichtarchitektur**: Handler -> Service -> Repository-Pattern
+- **Dependency Injection**: Flexible Konfiguration und bessere Testbarkeit
+- **Pub/Sub-Muster**: Für Echtzeit-Updates und Ereignisverarbeitung
+
+### Frontend (React)
+- **Komponenten-basiert**: Wiederverwendbare UI-Komponenten
+- **Redux/Context**: Zentrales State-Management
+- **WebSocket-Integration**: Echtzeit-Updates der Benutzeroberfläche
+
+## Remote-Capture-Architektur
+
+Die Remote-Capture-Funktionalität basiert auf einem Agent-Server-Modell:
+
+1. **Capture-Agent (auf Remote-Gerät)**
+   - Leichtgewichtiger Go-Dienst, der auf Edge-Geräten wie Raspberry Pi läuft
+   - Direkter Zugriff auf Netzwerkschnittstellen über libpcap/gopacket
+   - Minimale lokale Verarbeitung und Filterung
+   - REST-API für Konfiguration und Verwaltung
+   - WebSocket-Endpunkt für Paket-Streaming
+
+2. **Hauptanwendung (Server)**
+   - Verwaltet Verbindungen zu mehreren Remote-Agents
+   - Aggregiert und verarbeitet Daten von allen Erfassungspunkten
+   - Bietet einheitliche UI für die Verwaltung aller Erfassungsgeräte
+
+3. **Kommunikationsprotokoll**
+   - REST-API für Konfiguration, Start/Stop und Status
+   - WebSocket für effizientes Echtzeit-Streaming von Paketdaten
+   - Optimierte Datenübertragung (Serialisierung, Kompression)
+   - Authentifizierung über API-Keys oder Token
+
+4. **Deployment-Optionen**
+   - Standalone-Binary für Edge-Geräte (Go's Cross-Compilation)
+   - Docker-Container für einfache Bereitstellung
+   - Automatische Aktualisierung von Remote-Agents
+
+Diese Architektur ermöglicht ein skalierbares Netzwerk von Erfassungspunkten, die strategisch in einer Infrastruktur platziert werden können, während die zentrale Anwendung alle Daten aggregiert und analysiert.
+
+## Datenbankstruktur
+
+Die Datenbank besteht aus den folgenden Haupttabellen:
+- **Packets**: Gespeicherte Paketinformationen für forensische Analyse
+- **Events**: Markierte Netzwerkereignisse mit Metadaten
+- **Annotations**: Benutzer- und KI-generierte Anmerkungen zu Ereignissen
+- **GatewayInfo**: Informationen über identifizierte Gateway-Geräte
+
+## API-Struktur
+
+Die API ist RESTful mit den folgenden Hauptendpunkten:
+
+- `/api/analyze`: PCAP-Dateianalyse
+- `/api/live/start`, `/api/live/stop`: Steuerung der Live-Erfassung
+- `/api/interfaces`: Verfügbare Netzwerkschnittstellen
+- `/api/gateways`: Gateway-Informationen
+- `/api/events/gateway`: Gateway-spezifische Ereignisse
+- `/api/remote`: Verwaltung von Remote-Capture-Agents
+- `/api/ws`: WebSocket-Endpunkt für Echtzeit-Updates
+
+## Technologie-Stack
+
+- **Backend**: Go mit folgenden Hauptbibliotheken:
+  - `gopacket`: Paketerfassung und -analyse
+  - `gorilla/mux`, `gorilla/websocket`: HTTP-Routing und WebSockets
+  - `gorm` oder `sqlx`: Datenbankinteraktion
+  
+- **Frontend**:
+  - React/TypeScript
+  - Three.js für komplexe Visualisierungen
+  - WebSockets für Echtzeit-Updates
+
+- **KI/ML**:
+  - Optional-Integration mit OpenAI API für erweiterte Analyse
+  - Lokale Whisper-Integration für Spracherkennung
+
+- **Datenbank**:
+  - SQLite für einfache Bereitstellung und Einzelbenutzer-Modus
+
+## Sicherheitskonzept
+
+- Sichere Speicherung von API-Schlüsseln
+- Zugriffssteuerung für sensible Operationen
+- Validierung aller Eingaben
+- Sichere WebSocket-Kommunikation
