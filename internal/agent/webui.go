@@ -467,52 +467,91 @@ func (a *CaptureAgent) configHandler(w http.ResponseWriter, r *http.Request) {
 
 // saveConfig speichert die Konfiguration in die Konfigurationsdatei
 func (a *CaptureAgent) saveConfig() error {
-	// Bestimmen des Konfigurationspfads
-	configPath := ""
+	// Liste der Pfade, wo wir versuchen könnten, die Konfiguration zu speichern
+	configPaths := []string{}
 
 	// Nach dem Argument "--config" suchen
+	configArgPath := ""
 	for i, arg := range os.Args {
 		if arg == "--config" && i+1 < len(os.Args) {
-			configPath = os.Args[i+1]
+			configArgPath = os.Args[i+1]
 			break
 		} else if strings.HasPrefix(arg, "--config=") {
-			configPath = strings.TrimPrefix(arg, "--config=")
+			configArgPath = strings.TrimPrefix(arg, "--config=")
 			break
 		}
 	}
 
-	// Wenn kein Konfigurationspfad gefunden wurde, Standardpfad verwenden
-	if configPath == "" {
-		// Standard-Konfigurationspfad
-		configPath = "/etc/ki-network-analyzer/agent.json"
+	// Wenn ein Konfigurationspfad als Argument übergeben wurde, versuchen wir zuerst dort
+	if configArgPath != "" {
+		configPaths = append(configPaths, configArgPath)
+	}
 
-		// Alternatives Suchen: Executable-Verzeichnis
-		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			execDir, err := os.Executable()
-			if err == nil {
-				altPath := filepath.Join(filepath.Dir(execDir), "configs", "agent.json")
-				if _, err := os.Stat(altPath); err == nil {
-					configPath = altPath
-				}
+	// Weitere Pfade hinzufügen, die wir versuchen werden, nach Priorität sortiert
+	execDir, _ := os.Executable()
+	execDir = filepath.Dir(execDir)
+
+	configPaths = append(configPaths,
+		filepath.Join(execDir, "configs", "agent.json"),                  // /opt/ki-network-analyzer/configs/agent.json
+		"/etc/ki-network-analyzer/agent.json",                            // Standard-Systemkonfiguration
+		filepath.Join(execDir, "agent.json"),                             // Direkt im Executable-Verzeichnis
+		filepath.Join(os.TempDir(), "ki-network-analyzer", "agent.json"), // Temp-Verzeichnis als letzten Ausweg
+	)
+
+	// Variable für den letzten Fehler
+	var lastErr error
+
+	// Versuche alle Pfade nacheinander
+	for _, configPath := range configPaths {
+		log.Printf("Versuche Konfiguration zu speichern in: %s", configPath)
+
+		// Konfigurationsverzeichnis erstellen, falls nicht vorhanden
+		configDir := filepath.Dir(configPath)
+		if _, err := os.Stat(configDir); os.IsNotExist(err) {
+			if err := os.MkdirAll(configDir, 0755); err != nil {
+				log.Printf("Konnte Konfigurationsverzeichnis nicht erstellen: %v", err)
+				lastErr = err
+				continue
 			}
 		}
-	}
 
-	// Konfigurationsverzeichnis erstellen, falls nicht vorhanden
-	configDir := filepath.Dir(configPath)
-	if _, err := os.Stat(configDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(configDir, 0755); err != nil {
-			return fmt.Errorf("konnte Konfigurationsverzeichnis nicht erstellen: %v", err)
+		// Prüfen, ob die Datei existiert und beschreibbar ist
+		var fileExists bool
+		if _, err := os.Stat(configPath); err == nil {
+			fileExists = true
+			// Versuche, die Datei zum Schreiben zu öffnen
+			testFile, err := os.OpenFile(configPath, os.O_WRONLY, 0)
+			if err == nil {
+				testFile.Close()
+			} else {
+				log.Printf("Datei existiert, ist aber nicht beschreibbar: %v", err)
+				lastErr = err
+				continue
+			}
 		}
+
+		// Konfiguration speichern
+		if err := config.SaveConfig(a.config, configPath); err != nil {
+			log.Printf("Fehler beim Speichern der Konfiguration in %s: %v", configPath, err)
+			lastErr = err
+			continue
+		}
+
+		// Bei Erfolg eine Meldung ausgeben
+		log.Printf("Konfiguration erfolgreich in %s gespeichert", configPath)
+
+		// Wenn die Datei neu erstellt wurde, Berechtigungen setzen
+		if !fileExists {
+			if err := os.Chmod(configPath, 0664); err != nil { // rw-rw-r--
+				log.Printf("Warnung: Konnte Berechtigungen nicht setzen: %v", err)
+			}
+		}
+
+		return nil
 	}
 
-	// Konfiguration mit der Funktion aus dem config-Paket speichern
-	if err := config.SaveConfig(a.config, configPath); err != nil {
-		return fmt.Errorf("fehler beim Speichern der Konfiguration: %v", err)
-	}
-
-	log.Printf("Konfiguration erfolgreich in %s gespeichert", configPath)
-	return nil
+	// Wenn wir hier ankommen, ist das Speichern fehlgeschlagen
+	return fmt.Errorf("konnte Konfiguration in keinem der Pfade speichern: %v", lastErr)
 }
 
 // statusHandler gibt den aktuellen Status des Agents zurück

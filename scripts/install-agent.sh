@@ -125,6 +125,11 @@ mkdir -p $INSTALL_DIR
 mkdir -p $CONFIG_DIR
 mkdir -p $LOG_DIR
 
+# Stellen Sie sicher, dass die Verzeichnisse beschreibbar sind
+echo -e "${YELLOW}Berechtigungen für Konfigurationsverzeichnis setzen...${NC}"
+chmod -R 755 $CONFIG_DIR
+chmod -R 755 $INSTALL_DIR
+
 # Repository klonen
 echo -e "${YELLOW}Repository klonen...${NC}"
 cd /tmp
@@ -205,6 +210,17 @@ cat > $CONFIG_DIR/agent.json << EOL
 }
 EOL
 
+# Konfigurationsdatei-Berechtigungen setzen
+echo -e "${YELLOW}Berechtigungen für Konfigurationsdatei setzen...${NC}"
+chmod 664 $CONFIG_DIR/agent.json  # rw-rw-r--
+chown root:root $CONFIG_DIR/agent.json
+
+# Alternative writeable config erstellen (falls /etc read-only ist)
+mkdir -p $INSTALL_DIR/configs
+cp $CONFIG_DIR/agent.json $INSTALL_DIR/configs/
+chmod 664 $INSTALL_DIR/configs/agent.json
+chown root:root $INSTALL_DIR/configs/agent.json
+
 # Systemd Service erstellen
 echo -e "${YELLOW}Systemd Service erstellen...${NC}"
 cat > /etc/systemd/system/ki-network-analyzer-agent.service << EOL
@@ -216,11 +232,11 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=$INSTALL_DIR
-ExecStart=$INSTALL_DIR/agent --config $CONFIG_DIR/agent.json
+ExecStart=$INSTALL_DIR/agent --config $INSTALL_DIR/configs/agent.json
 Restart=always
 RestartSec=5
 AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
-ProtectSystem=full
+ProtectSystem=no
 ProtectHome=read-only
 PrivateTmp=true
 NoNewPrivileges=true
