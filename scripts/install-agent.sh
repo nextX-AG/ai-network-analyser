@@ -230,12 +230,17 @@ After=network.target
 
 [Service]
 Type=simple
+# Stellt sicher, dass der Dienst als root ausgeführt wird
 User=root
+Group=root
 WorkingDirectory=$INSTALL_DIR
 ExecStart=$INSTALL_DIR/agent --config $INSTALL_DIR/configs/agent.json
 Restart=always
 RestartSec=5
+# Kritische Capabilities für Paketerfassung
 AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN
+# Systemkonfiguration
 ProtectSystem=no
 ProtectHome=read-only
 PrivateTmp=true
@@ -257,6 +262,16 @@ systemctl start ki-network-analyzer-agent
 sleep 2
 if systemctl is-active --quiet ki-network-analyzer-agent; then
   echo -e "${GREEN}Agent wurde erfolgreich installiert und gestartet!${NC}"
+  # Überprüfen, ob der Dienst mit den richtigen Berechtigungen ausgeführt wird
+  echo -e "${YELLOW}Überprüfen der Dienst-Berechtigungen...${NC}"
+  ps -eo pid,user,group,comm | grep agent
+  echo -e "${YELLOW}Überprüfen der Paketerfassungsfähigkeit...${NC}"
+  if timeout 5 tcpdump -i $INTERFACE -c 1 2>/dev/null; then
+    echo -e "${GREEN}Paketerfassung scheint zu funktionieren!${NC}"
+  else
+    echo -e "${YELLOW}Paketerfassung könnte Probleme haben. Führen Sie einen manuellen Test durch:${NC}"
+    echo -e "sudo tcpdump -i $INTERFACE -c 5"
+  fi
 else
   echo -e "${RED}Agent konnte nicht gestartet werden. Prüfen Sie den Status mit: systemctl status ki-network-analyzer-agent${NC}"
   exit 1

@@ -43,6 +43,7 @@ This document provides a high-level overview of the current tasks for the KI-Net
 - [x] Fix Admin UI Route registration - made Admin UI accessible
 - [x] Fix configuration file permissions - resolved read-only filesystem issue for configuration
 - [x] Fix Remote Agent interface persistence and status display
+- [x] Fix packet capturing permissions - ensured agent runs as root with proper capabilities
 
 ## Current Remote Agent Improvements
 - [x] Added multiple configuration paths to handle read-only filesystems
@@ -54,6 +55,8 @@ This document provides a high-level overview of the current tasks for the KI-Net
 - [x] Added UpdateInterface method to PcapCapturer to ensure configuration is updated
 - [x] Improved saveConfig function to try multiple paths if one fails
 - [x] Ensured restart handler saves configuration before restarting
+- [x] Added root permission check and explicit capability requirements in agent
+- [x] Enhanced systemd service to ensure proper network capture permissions
 
 ## Server-Side Network Interface Selection Implementation
 - [ ] Fix agent registration to use actual routable IP address instead of 0.0.0.0
