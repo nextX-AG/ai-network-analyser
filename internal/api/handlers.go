@@ -268,7 +268,12 @@ func GetInterfacesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	// Stellen wir sicher, dass keine Fehler bei der JSON-Kodierung auftreten
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Fehler bei der JSON-Kodierung: %v", err)
+		http.Error(w, "Interner Serverfehler", http.StatusInternalServerError)
+		return
+	}
 }
 
 // StartLiveCaptureHandler startet die Live-Capture auf einer Netzwerkschnittstelle

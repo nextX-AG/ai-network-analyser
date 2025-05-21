@@ -218,6 +218,86 @@
         .interface-selector {
             flex: 1;
         }
+        
+        /* Remote-Agent-Stile */
+        .remote-section {
+            border: 2px solid #9b59b6;
+            padding: 20px;
+            background-color: #f4ecf7;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .remote-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .agents-list {
+            margin-bottom: 20px;
+        }
+        .agent-item {
+            background-color: white;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .agent-info {
+            flex: 1;
+        }
+        .agent-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .agent-details {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .agent-controls {
+            display: flex;
+            gap: 10px;
+        }
+        .agent-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-online {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .status-offline {
+            background-color: #95a5a6;
+            color: white;
+        }
+        .status-capturing {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .no-agents {
+            padding: 20px;
+            text-align: center;
+            color: #7f8c8d;
+            background-color: white;
+            border-radius: 4px;
+        }
+        .agent-capture-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .agent-capture-view {
+            background-color: white;
+            border-radius: 4px;
+            padding: 20px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -228,6 +308,7 @@
         <div class="tabs">
             <div id="tab-upload" class="tab active">PCAP-Datei hochladen</div>
             <div id="tab-live" class="tab">Live-Capture</div>
+            <div id="tab-agents" class="tab">Remote-Agents</div>
         </div>
         
         <div id="content-upload" class="tab-content active">
@@ -278,6 +359,62 @@
                 <h3>Live Gateway-Verkehr</h3>
                 <div class="live-packets" id="live-packets">
                     <div class="packet-entry">Noch keine Pakete erfasst. Starten Sie die Capture, um Live-Daten zu sehen.</div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="content-agents" class="tab-content">
+            <div class="remote-section">
+                <h2>Remote-Capture-Agents</h2>
+                <p>Verwalten Sie Remote-Capture-Agents und starten Sie Packet-Captures an verschiedenen Punkten im Netzwerk.</p>
+                
+                <div class="remote-controls">
+                    <button id="refresh-agents">Agents aktualisieren</button>
+                    <div class="status-indicator">
+                        <span id="agents-count">0</span> Agents verfügbar
+                    </div>
+                </div>
+                
+                <div id="agents-list" class="agents-list">
+                    <div class="no-agents">Keine Remote-Agents gefunden. Stellen Sie sicher, dass Ihre Agents verbunden sind.</div>
+                </div>
+                
+                <div id="agent-capture-view" class="agent-capture-view" style="display: none;">
+                    <h3 id="agent-name">Agent-Name</h3>
+                    
+                    <div class="agent-capture-controls">
+                        <div class="interface-selector">
+                            <select id="agent-interface-select">
+                                <option value="">Netzwerkschnittstelle auswählen...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="capture-controls">
+                            <button id="agent-start-capture">Capture starten</button>
+                            <button id="agent-stop-capture" class="danger" disabled>Capture stoppen</button>
+                            <span id="agent-status"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="agent-total-packets">0</div>
+                            <div class="stat-label">Gesamte Pakete</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="agent-gateway-packets">0</div>
+                            <div class="stat-label">Gateway-Pakete</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="agent-gateway-percentage">0%</div>
+                            <div class="stat-label">Gateway-Anteil</div>
+                        </div>
+                    </div>
+                    
+                    <h3>Live Gateway-Verkehr vom Agent</h3>
+                    <div class="live-packets" id="agent-packets">
+                        <div class="packet-entry">Noch keine Pakete erfasst. Starten Sie die Capture, um Live-Daten zu sehen.</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -546,7 +683,21 @@
             // Netzwerkschnittstellen laden
             function loadInterfaces() {
                 fetch('/api/interfaces')
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('JSON Parsing Fehler:', e);
+                        console.error('Erhaltener Text:', text);
+                        throw new Error(`Fehler beim Parsen der JSON-Antwort: ${e.message}`);
+                    }
+                })
                 .then(data => {
                     if (data.success && data.data) {
                         interfaceSelect.innerHTML = '<option value="">Netzwerkschnittstelle auswählen...</option>';
@@ -557,7 +708,7 @@
                             
                             const option = document.createElement('option');
                             option.value = iface.name;
-                            option.textContent = `${iface.name} - ${iface.ip_addresses.join(', ')}`;
+                            option.textContent = `${iface.name} - ${iface.ip_addresses ? iface.ip_addresses.join(', ') : ''}`;
                             interfaceSelect.appendChild(option);
                         });
                         
@@ -728,6 +879,309 @@
             
             // Initialisierung
             loadInterfaces();
+            
+            // Remote-Agent-Funktionalität
+            const refreshAgentsBtn = document.getElementById('refresh-agents');
+            const agentsList = document.getElementById('agents-list');
+            const agentsCount = document.getElementById('agents-count');
+            const agentCaptureView = document.getElementById('agent-capture-view');
+            const agentName = document.getElementById('agent-name');
+            const agentInterfaceSelect = document.getElementById('agent-interface-select');
+            const agentStartCaptureBtn = document.getElementById('agent-start-capture');
+            const agentStopCaptureBtn = document.getElementById('agent-stop-capture');
+            const agentStatus = document.getElementById('agent-status');
+            const agentTotalPackets = document.getElementById('agent-total-packets');
+            const agentGatewayPackets = document.getElementById('agent-gateway-packets');
+            const agentGatewayPercentage = document.getElementById('agent-gateway-percentage');
+            const agentPacketsContainer = document.getElementById('agent-packets');
+            
+            let selectedAgent = null;
+            let agentWebSocket = null;
+            
+            // Agents aktualisieren
+            refreshAgentsBtn.addEventListener('click', loadAgents);
+            
+            // Agents laden
+            function loadAgents() {
+                fetch('/api/agents')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.data) {
+                        renderAgentsList(data.data);
+                    } else {
+                        agentsList.innerHTML = '<div class="no-agents">Keine Remote-Agents gefunden.</div>';
+                    }
+                })
+                .catch(err => {
+                    console.error('Fehler beim Laden der Agents:', err);
+                    agentsList.innerHTML = `<div class="no-agents">Fehler beim Laden der Agents: ${err.message}</div>`;
+                });
+            }
+            
+            // Agents in der Liste darstellen
+            function renderAgentsList(agents) {
+                agentsList.innerHTML = '';
+                
+                if (agents.length === 0) {
+                    agentsList.innerHTML = '<div class="no-agents">Keine Remote-Agents gefunden.</div>';
+                    agentsCount.textContent = '0';
+                    return;
+                }
+                
+                agentsCount.textContent = agents.length;
+                
+                agents.forEach(agent => {
+                    const agentElement = document.createElement('div');
+                    agentElement.className = 'agent-item';
+                    
+                    // Status-Klasse bestimmen
+                    let statusClass = '';
+                    if (agent.status === 'online') {
+                        statusClass = 'status-online';
+                    } else if (agent.status === 'offline') {
+                        statusClass = 'status-offline';
+                    } else if (agent.status === 'capturing') {
+                        statusClass = 'status-capturing';
+                    }
+                    
+                    // Details über Interfaces hinzufügen
+                    const interfacesText = agent.interfaces && agent.interfaces.length > 0 
+                        ? `Schnittstellen: ${agent.interfaces.join(', ')}` 
+                        : 'Keine Schnittstellen verfügbar';
+                    
+                    // Agent-Element-Inhalt
+                    agentElement.innerHTML = `
+                        <div class="agent-info">
+                            <div class="agent-name">${agent.name} <span class="agent-status ${statusClass}">${agent.status}</span></div>
+                            <div class="agent-details">
+                                ${agent.hostname || 'Unbekannter Host'} | ${interfacesText}
+                            </div>
+                        </div>
+                        <div class="agent-controls">
+                            <button class="view-agent" data-name="${agent.name}">Anzeigen</button>
+                        </div>
+                    `;
+                    
+                    agentsList.appendChild(agentElement);
+                    
+                    // Event-Listener für den Anzeigen-Button
+                    const viewButton = agentElement.querySelector('.view-agent');
+                    viewButton.addEventListener('click', () => {
+                        selectAgent(agent);
+                    });
+                });
+            }
+            
+            // Agent auswählen
+            function selectAgent(agent) {
+                selectedAgent = agent;
+                
+                // Details im Capture-View aktualisieren
+                agentName.textContent = agent.name;
+                
+                // Interfaces in der Dropdown-Liste anzeigen
+                agentInterfaceSelect.innerHTML = '<option value="">Netzwerkschnittstelle auswählen...</option>';
+                
+                if (agent.interfaces && agent.interfaces.length > 0) {
+                    agent.interfaces.forEach(iface => {
+                        const option = document.createElement('option');
+                        option.value = iface;
+                        option.textContent = iface;
+                        agentInterfaceSelect.appendChild(option);
+                    });
+                    
+                    agentStartCaptureBtn.disabled = false;
+                } else {
+                    agentStartCaptureBtn.disabled = true;
+                }
+                
+                // Button-Status basierend auf dem Agent-Status aktualisieren
+                if (agent.status === 'capturing') {
+                    agentStartCaptureBtn.disabled = true;
+                    agentStopCaptureBtn.disabled = false;
+                    agentStatus.innerHTML = '<span class="live-indicator"></span> Capture läuft';
+                } else {
+                    agentStartCaptureBtn.disabled = false;
+                    agentStopCaptureBtn.disabled = true;
+                    agentStatus.textContent = '';
+                }
+                
+                // Capture-View anzeigen
+                agentCaptureView.style.display = 'block';
+                
+                // Connects zu einem WebSocket für den Agent erstellen
+                connectAgentWebSocket(agent);
+            }
+            
+            // WebSocket-Verbindung zum Agent herstellen
+            function connectAgentWebSocket(agent) {
+                // Bestehende WebSocket-Verbindung schließen
+                if (agentWebSocket) {
+                    agentWebSocket.close();
+                }
+                
+                // WebSocket-URL ermitteln
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const agentUrl = new URL(agent.url);
+                const wsUrl = `${wsProtocol}//${agentUrl.host}/ws`;
+                
+                // WebSocket-Verbindung herstellen
+                agentWebSocket = new WebSocket(wsUrl);
+                
+                agentWebSocket.onopen = function() {
+                    console.log(`WebSocket-Verbindung zum Agent ${agent.name} hergestellt`);
+                };
+                
+                agentWebSocket.onmessage = function(event) {
+                    try {
+                        const message = JSON.parse(event.data);
+                        
+                        if (message.type === 'packet') {
+                            // Paket zur Anzeige hinzufügen
+                            addPacketToAgentView(message.data);
+                        } else if (message.type === 'stats') {
+                            // Statistiken aktualisieren
+                            updateAgentStats(message.data);
+                        }
+                    } catch (err) {
+                        console.error('Fehler beim Verarbeiten der WebSocket-Nachricht:', err);
+                    }
+                };
+                
+                agentWebSocket.onclose = function() {
+                    console.log(`WebSocket-Verbindung zum Agent ${agent.name} geschlossen`);
+                };
+                
+                agentWebSocket.onerror = function(error) {
+                    console.error(`WebSocket-Fehler bei Agent ${agent.name}:`, error);
+                };
+            }
+            
+            // Capture auf dem Agent starten
+            agentStartCaptureBtn.addEventListener('click', function() {
+                if (!selectedAgent) return;
+                
+                const selectedInterface = agentInterfaceSelect.value;
+                if (!selectedInterface) {
+                    showError('Bitte wählen Sie eine Netzwerkschnittstelle aus.');
+                    return;
+                }
+                
+                // UI aktualisieren
+                agentStartCaptureBtn.disabled = true;
+                agentStopCaptureBtn.disabled = false;
+                agentInterfaceSelect.disabled = true;
+                
+                // Capture-Anfrage senden
+                fetch('/api/agents/capture/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: selectedAgent.name,
+                        interface: selectedInterface
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        agentStatus.innerHTML = '<span class="live-indicator"></span> Capture läuft';
+                        agentPacketsContainer.innerHTML = '';
+                        
+                        // Agents aktualisieren, um den neuen Status zu sehen
+                        loadAgents();
+                    } else {
+                        showError(data.error || 'Fehler beim Starten der Remote-Capture');
+                        resetAgentCaptureUI();
+                    }
+                })
+                .catch(err => {
+                    showError('Fehler beim Starten der Remote-Capture: ' + err.message);
+                    resetAgentCaptureUI();
+                });
+            });
+            
+            // Capture auf dem Agent stoppen
+            agentStopCaptureBtn.addEventListener('click', function() {
+                if (!selectedAgent) return;
+                
+                fetch('/api/agents/capture/stop', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: selectedAgent.name
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        agentStatus.textContent = 'Capture gestoppt';
+                        resetAgentCaptureUI();
+                        
+                        // Agents aktualisieren, um den neuen Status zu sehen
+                        loadAgents();
+                    } else {
+                        showError(data.error || 'Fehler beim Stoppen der Remote-Capture');
+                    }
+                })
+                .catch(err => {
+                    showError('Fehler beim Stoppen der Remote-Capture: ' + err.message);
+                });
+            });
+            
+            // Agent-UI zurücksetzen
+            function resetAgentCaptureUI() {
+                agentStartCaptureBtn.disabled = false;
+                agentStopCaptureBtn.disabled = true;
+                agentInterfaceSelect.disabled = false;
+            }
+            
+            // Paket zur Agent-Ansicht hinzufügen
+            function addPacketToAgentView(packet) {
+                const packetEntry = document.createElement('div');
+                packetEntry.className = 'packet-entry';
+                
+                if (packet.is_gateway) {
+                    packetEntry.classList.add('gateway');
+                }
+                
+                // Formatierter Zeitstempel
+                const timestamp = new Date(packet.timestamp);
+                const time = timestamp.toLocaleTimeString('de-DE', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    fractionalSecondDigits: 3
+                });
+                
+                packetEntry.textContent = `${time} | ${packet.summary}`;
+                
+                // Am Anfang einfügen, um neueste Pakete oben zu haben
+                agentPacketsContainer.insertBefore(packetEntry, agentPacketsContainer.firstChild);
+                
+                // Nur die letzten 100 Pakete behalten
+                while (agentPacketsContainer.children.length > 100) {
+                    agentPacketsContainer.removeChild(agentPacketsContainer.lastChild);
+                }
+            }
+            
+            // Agent-Statistiken aktualisieren
+            function updateAgentStats(stats) {
+                agentTotalPackets.textContent = stats.total_packets || 0;
+                agentGatewayPackets.textContent = stats.gateway_packets || 0;
+                agentGatewayPercentage.textContent = ((stats.gateway_percentage || 0).toFixed(1) + '%');
+            }
+            
+            // Initialisierung für Agents
+            loadAgents();
         });
     </script>
 </body>

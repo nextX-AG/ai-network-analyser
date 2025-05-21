@@ -1,0 +1,31 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8090,
+    "enable_websocket": true,
+    "enable_cors": true,
+    "static_dir": "./web"
+  },
+  "capture": {
+    "pcap_dir": "./pcaps",
+    "interface": "eth0",
+    "promisc_mode": true,
+    "snap_len": 65535,
+    "filter": "",
+    "buffer_size": 2097152,
+    "enable_live": false
+  },
+  "storage": {
+    "type": "sqlite",
+    "path": "./data/packets.db",
+    "auto_vacuum": true,
+    "max_packets": 1000000
+  },
+  "agent": {
+    "listen": "0.0.0.0:8090",
+    "server_url": "http://192.168.1.100:9090",
+    "interface": "eth0",
+    "name": "up-board-agent",
+    "api_key": "change-me-to-secure-key"
+  }
+} 

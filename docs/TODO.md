@@ -1,4 +1,4 @@
-<!-- Version: 0.1.0 | Last Updated: 2024-06-19 14:30:00 UTC -->
+<!-- Version: 0.2.0 | Last Updated: 2025-05-21 18:00:00 UTC -->
 
 
 # KI-Netzwerk-Analyzer - Task List
@@ -8,6 +8,7 @@
 - [x] Minimales Go-Backend Grundgerüst implementieren
 - [x] Grundlegende Paketerfassung mit gopacket integrieren
 - [x] Einfaches React/Three.js Frontend-Scaffold erstellen
+- [x] Remote-Capture-System für verteilte Erfassung implementieren
 
 ## Projektstruktur
 - [x] Klare modulare Struktur für das Projekt festlegen
@@ -39,13 +40,19 @@
 - [ ] Export-Funktionen für gefilterte Paketgruppen
 
 ## Remote-Capture-System
-- [ ] Leichtgewichtigen Capture-Agent für Remote-Geräte (z.B. Raspberry Pi) implementieren
-- [ ] REST-API für Konfiguration und Steuerung des Remote-Agents entwickeln
-- [ ] WebSocket-Streaming von erfassten Paketen zum Hauptsystem implementieren
-- [ ] Authentifizierung und Sicherheitskonzept für Remote-Agents erstellen
-- [ ] Konfigurationsmanagement für mehrere Remote-Agents implementieren
-- [ ] UI-Integration für Remote-Capture-Verwaltung
+- [x] Leichtgewichtigen Capture-Agent für Remote-Geräte (UP Board) implementieren
+- [x] REST-API für Konfiguration und Steuerung des Remote-Agents entwickeln
+- [x] WebSocket-Streaming von erfassten Paketen zum Hauptsystem implementieren
+- [x] Agent-Registrierung und Verwaltung im Hauptsystem implementieren
+- [x] Konfigurationsmanagement für Remote-Agents implementieren
+- [x] UI-Integration für Remote-Capture-Verwaltung
+- [x] Dokumentation für Remote-Agent-Installation und Deployment erstellen
+- [ ] Authentifizierung und Sicherheitskonzept für Remote-Agents verbessern
 - [ ] Automatische Erkennung von Remote-Agents im Netzwerk
+- [ ] Leistungsoptimierung für datenintensive Übertragungen
+- [ ] Offline-Modus für Agents mit späterem Sync implementieren
+- [ ] Automatische Agent-Updates ermöglichen
+- [ ] Systemd-Service-Templates für einfache Bereitstellung
 
 ## Speech2Text-Modul
 - [ ] Integration von Whisper.cpp als lokale Speech2Text-Engine
@@ -71,11 +78,12 @@
 
 ## Frontend-Basisstruktur
 - [x] Minimales Frontend initialisieren
-- [ ] Three.js-Integration für Visualisierungen
 - [x] API-Client für Backend-Kommunikation implementieren
-- [ ] Authentifizierung und Autorisierung (falls erforderlich)
 - [x] Routing-Struktur implementieren
 - [x] Responsive Designgrundlage implementieren
+- [x] Remote-Agent-Verwaltung im Frontend integrieren
+- [ ] Three.js-Integration für Visualisierungen
+- [ ] Authentifizierung und Autorisierung (falls erforderlich)
 - [ ] Themensystem für Light/Dark-Mode einrichten
 
 ## Timeline & Visualisierung
@@ -113,6 +121,7 @@
 - [x] Benutzerhandbuch für Endanwender in README
 - [x] Entwicklerdokumentation für Erweiterungen
 - [x] Installationsanleitung erstellen
+- [x] Remote-Agent-Dokumentation erstellen
 - [x] Sicherheitskonzept dokumentieren
 - [ ] Kontinuierliche Integration der Dokumentation in den Entwicklungsprozess
 
@@ -120,6 +129,7 @@
 - [ ] Unit-Tests für kritische Backend-Komponenten
 - [ ] Integration-Tests für API-Endpunkte
 - [ ] Frontend-Tests mit React Testing Library
+- [ ] Tests für Remote-Agent-Kommunikation implementieren
 - [ ] End-to-End-Tests mit Cypress oder ähnlichem
 - [ ] Performance-Tests für große Datenmengen
 - [ ] Sicherheitstests (OWASP-Prüfung)
@@ -134,11 +144,15 @@
 - [x] Sichere Speicherung von API-Schlüsseln implementieren
 - [ ] HTTPS-Unterstützung für Produktivumgebung
 - [x] Datenschutzkonformes Logging implementieren
+- [ ] API-Key-Authentifizierung für Remote-Agents verbessern
+- [ ] TLS für Websocket-Kommunikation implementieren
 - [ ] Zugriffskontrolle für sensible Funktionen
 
 ## Deployment & DevOps
 - [x] Build-Skript für die Anwendung erstellen
+- [x] Systemd-Service-Anleitung für Remote-Agents erstellen
 - [ ] Docker-Komposition für Produktivumgebung
+- [ ] Docker-Images für Remote-Agents bereitstellen
 - [ ] CI/CD-Pipeline für automatisierte Tests und Builds
 - [ ] Releasemanagement-Prozess definieren
 - [ ] Monitoring und Logging-Infrastruktur einrichten
@@ -147,6 +161,8 @@
 ## Zukünftige Erweiterungen
 - [ ] Integration lokaler LLMs als Alternative zu OpenAI
 - [ ] Erweiterte Protokollanalyse für spezifische Anwendungsprotokolle
+- [ ] Multi-Agent-Erfassung mit synchronisierter Zeitlinie
+- [ ] Agent-Gruppenmanagement und -organisation
 - [ ] Kollaborative Analyse mit mehreren Benutzern
 - [ ] Cloud-basierte Deployment-Option
 - [ ] Mobile Ansicht für Frontend
@@ -159,4 +175,6 @@
 - [x] Einfache Web-Oberfläche für PCAP-Upload und Gateway-Analyse
 - [x] REST-API-Endpunkte für Gateway-Informationen bereitstellen
 - [x] Echtzeit-Monitoring von Gateway-Aktivitäten über Live-Capture
-- [ ] Verbesserte visuelle Darstellung von Gateway-Kommunikation 
+- [x] Remote-Capture-Funktionalität für verteilte Gateway-Analyse
+- [ ] Verbesserte visuelle Darstellung von Gateway-Kommunikation
+- [ ] Korrelation von Gateway-Ereignissen über mehrere Agents hinweg 

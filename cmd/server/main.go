@@ -304,6 +304,17 @@ func registerAPIHandlers(router *mux.Router, capturer *packet.PcapCapturer, cfg 
 	apiRouter.HandleFunc("/live/stop", func(w http.ResponseWriter, r *http.Request) {
 		api.StopLiveCaptureHandler(w, r)
 	}).Methods("POST")
+
+	// Remote-Agent-Management-Endpunkte
+	apiRouter.HandleFunc("/agents", api.ListAgentsHandler).Methods("GET")
+	apiRouter.HandleFunc("/agents/register", api.RegisterAgentHandler).Methods("POST")
+	apiRouter.HandleFunc("/agents/unregister", api.UnregisterAgentHandler).Methods("POST")
+	apiRouter.HandleFunc("/agents/heartbeat", api.HeartbeatHandler).Methods("POST")
+	apiRouter.HandleFunc("/agents/capture/start", api.StartAgentCaptureHandler).Methods("POST")
+	apiRouter.HandleFunc("/agents/capture/stop", api.StopAgentCaptureHandler).Methods("POST")
+
+	// Status-Prüfung für Agents starten
+	go api.CheckAgentsStatus()
 }
 
 // handleWebSocketConnection verwaltet eine WebSocket-Verbindung

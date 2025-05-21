@@ -26,19 +26,96 @@ Die aktuelle Version (MVP) bietet folgende Kernfunktionen:
 
 ## Remote-Capture-System
 
-Der KI-Netzwerk-Analyzer unterstützt (oder wird in Kürze unterstützen) ein verteiltes Erfassungsystem:
+Der KI-Netzwerk-Analyzer unterstützt ein verteiltes Erfassungssystem mit Remote-Capture-Agents, die auf verschiedenen Geräten im Netzwerk ausgeführt werden können.
 
-### Funktionsweise
-- Leichte Capture-Agents können auf kleinen Linux-Geräten (z.B. Raspberry Pi) installiert werden
-- Diese Agents erfassen Netzwerkverkehr an strategischen Punkten im Netzwerk
-- Kommunikation zwischen Agents und Hauptsystem über REST-API und WebSockets
-- Zentrale Visualisierung und Analyse aller erfassten Daten
+### Remote-Agent-Installation
 
-### Vorteile
-- Erfassung an mehreren Netzwerkpunkten gleichzeitig
-- Analyse von Gateway-Verkehr aus verschiedenen Perspektiven
-- Geringer Ressourcenbedarf auf Erfassungsgeräten
-- Einfache Skalierung durch Hinzufügen neuer Erfassungspunkte
+Der Remote-Capture-Agent kann auf jedem Linux-System installiert werden, insbesondere auf UP Boards mit Ubuntu:
+
+1. Installieren Sie die erforderlichen Bibliotheken:
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y golang-go libpcap-dev git
+   ```
+
+2. Klonen Sie das Repository:
+   ```bash
+   git clone https://github.com/nextX-AG/ai-network-analyser
+   cd ai-network-analyser
+   ```
+
+3. Erstellen Sie den Agent:
+   ```bash
+   go build -o bin/agent cmd/agent/main.go
+   ```
+
+4. Konfigurieren Sie den Agent:
+   ```bash
+   cp configs/agent.example.json configs/agent.json
+   ```
+
+5. Bearbeiten Sie die Konfigurationsdatei und passen Sie die Parameter an, insbesondere:
+   - `server_url`: URL des Hauptservers
+   - `interface`: Name der Netzwerkschnittstelle für die Paketerfassung
+   - `name`: Eindeutiger Name für den Agent
+   - `api_key`: Authentifizierungsschlüssel (falls aktiviert)
+
+### Agent starten
+
+```bash
+sudo ./bin/agent --config=configs/agent.json
+```
+
+Sudo-Rechte werden benötigt, um auf die Netzwerkschnittstellen zuzugreifen.
+
+### Agent-Verwaltung im Hauptsystem
+
+1. Starten Sie die Hauptanwendung:
+   ```bash
+   ./bin/analyzer --config=configs/config.example.json
+   ```
+
+2. Öffnen Sie die Web-Oberfläche unter http://localhost:9090
+3. Wechseln Sie zum Tab "Remote-Agents"
+4. Klicken Sie auf "Agents aktualisieren", um verfügbare Agents zu sehen
+5. Wählen Sie einen Agent aus und starten Sie die Erfassung auf diesem Gerät
+
+### Automatischer Start als Systemdienst
+
+Um den Agent als Systemdienst einzurichten (für automatischen Start beim Booten):
+
+1. Erstellen Sie eine Systemd-Servicedatei:
+   ```bash
+   sudo nano /etc/systemd/system/network-agent.service
+   ```
+
+2. Fügen Sie folgenden Inhalt ein:
+   ```
+   [Unit]
+   Description=Network Analyzer Remote Agent
+   After=network.target
+
+   [Service]
+   ExecStart=/pfad/zum/bin/agent --config=/pfad/zur/configs/agent.json
+   WorkingDirectory=/pfad/zum/projektverzeichnis
+   User=root
+   Restart=always
+   RestartSec=10
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+3. Aktivieren und starten Sie den Dienst:
+   ```bash
+   sudo systemctl enable network-agent
+   sudo systemctl start network-agent
+   ```
+
+4. Überprüfen Sie den Status des Dienstes:
+   ```bash
+   sudo systemctl status network-agent
+   ```
 
 ## Installation
 

@@ -15,6 +15,7 @@ type Config struct {
 	AI      AIConfig      `json:"ai"`
 	Speech  SpeechConfig  `json:"speech"`
 	Gateway GatewayConfig `json:"gateway"`
+	Agent   *AgentConfig  `json:"agent,omitempty"`
 }
 
 // ServerConfig enthält die Konfiguration für den HTTP-Server
@@ -77,6 +78,24 @@ type GatewayConfig struct {
 	DetectDMZ            bool     `json:"detect_dmz"`
 	DetectUPnP           bool     `json:"detect_upnp"`
 	EnableAlerts         bool     `json:"enable_alerts"`
+}
+
+// AgentConfig enthält die Konfiguration für den Remote-Agent
+type AgentConfig struct {
+	// Auf welcher Adresse/Port der Agent lauscht
+	Listen string `json:"listen"`
+
+	// URL des Hauptservers für die Registrierung
+	ServerURL string `json:"server_url"`
+
+	// Zu verwendende Netzwerkschnittstelle für Packet-Capture
+	Interface string `json:"interface"`
+
+	// Name des Agents für die Identifikation
+	Name string `json:"name"`
+
+	// API-Schlüssel für die Authentifizierung mit dem Hauptserver
+	APIKey string `json:"api_key,omitempty"`
 }
 
 // LoadConfig lädt die Konfiguration aus einer Datei
