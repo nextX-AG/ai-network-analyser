@@ -149,5 +149,5 @@
 - [x] DHCP-, DNS- und ARP-Verkehr mit Gateway-Bezug identifizieren und analysieren
 - [x] Einfache Web-Oberfläche für PCAP-Upload und Gateway-Analyse
 - [x] REST-API-Endpunkte für Gateway-Informationen bereitstellen
-- [ ] Verbesserte visuelle Darstellung von Gateway-Kommunikation
-- [ ] Echtzeit-Monitoring von Gateway-Aktivitäten 
+- [x] Echtzeit-Monitoring von Gateway-Aktivitäten über Live-Capture
+- [ ] Verbesserte visuelle Darstellung von Gateway-Kommunikation 

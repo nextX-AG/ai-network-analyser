@@ -38,6 +38,37 @@
             border-radius: 4px;
             margin-bottom: 20px;
         }
+        .live-section {
+            border: 2px solid #3498db;
+            padding: 20px;
+            background-color: #ebf5fb;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-right: 10px;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab.active {
+            background-color: #f9f9f9;
+            border-color: #ddd;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
         button {
             background-color: #3498db;
             color: white;
@@ -46,9 +77,28 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        button.danger {
+            background-color: #e74c3c;
         }
         button:hover {
             background-color: #2980b9;
+        }
+        button.danger:hover {
+            background-color: #c0392b;
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+            margin-right: 10px;
+            min-width: 200px;
         }
         #file-name {
             margin-top: 10px;
@@ -92,6 +142,25 @@
             margin-bottom: 10px;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
+        .live-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #e74c3c;
+            margin-right: 8px;
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        .live-status {
+            font-weight: bold;
+            margin-left: 10px;
+            color: #e74c3c;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -119,19 +188,98 @@
             margin-bottom: 15px;
             display: none;
         }
+        .live-packets {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 15px;
+            padding: 10px;
+        }
+        .packet-entry {
+            border-bottom: 1px solid #eee;
+            padding: 8px 0;
+            font-family: monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .packet-entry:last-child {
+            border-bottom: none;
+        }
+        .packet-entry.gateway {
+            background-color: #e8f4fc;
+        }
+        .live-controls {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .interface-selector {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>KI-Netzwerk-Analyzer - Gateway-Analyse</h1>
-        <p>Analysieren Sie Ihre PCAP-Dateien mit Fokus auf Gateway-Verkehr und entdecken Sie wichtige Muster und potenzielle Probleme.</p>
+        <p>Analysieren Sie Ihre PCAP-Dateien oder Ihren Live-Netzwerkverkehr mit Fokus auf Gateway-Aktivitäten und entdecken Sie wichtige Muster und potenzielle Probleme.</p>
         
-        <div class="upload-section">
-            <h2>PCAP-Datei hochladen</h2>
-            <p>Wählen Sie eine PCAP-Datei aus Ihrem Computer aus oder ziehen Sie sie hierher.</p>
-            <input type="file" id="pcap-upload" accept=".pcap,.pcapng" style="display: none;">
-            <button id="upload-btn">Datei auswählen</button>
-            <div id="file-name"></div>
+        <div class="tabs">
+            <div id="tab-upload" class="tab active">PCAP-Datei hochladen</div>
+            <div id="tab-live" class="tab">Live-Capture</div>
+        </div>
+        
+        <div id="content-upload" class="tab-content active">
+            <div class="upload-section">
+                <h2>PCAP-Datei hochladen</h2>
+                <p>Wählen Sie eine PCAP-Datei aus Ihrem Computer aus oder ziehen Sie sie hierher.</p>
+                <input type="file" id="pcap-upload" accept=".pcap,.pcapng" style="display: none;">
+                <button id="upload-btn">Datei auswählen</button>
+                <div id="file-name"></div>
+            </div>
+        </div>
+        
+        <div id="content-live" class="tab-content">
+            <div class="live-section">
+                <h2>Live-Netzwerkerfassung</h2>
+                <p>Wählen Sie eine Netzwerkschnittstelle aus und starten Sie die Echtzeitanalyse des Netzwerkverkehrs.</p>
+                
+                <div class="live-controls">
+                    <div class="interface-selector">
+                        <select id="interface-select">
+                            <option value="">Netzwerkschnittstelle auswählen...</option>
+                        </select>
+                        <button id="refresh-interfaces">Aktualisieren</button>
+                    </div>
+                    
+                    <div class="capture-controls">
+                        <button id="start-capture" disabled>Capture starten</button>
+                        <button id="stop-capture" class="danger" disabled>Capture stoppen</button>
+                        <span id="live-status"></span>
+                    </div>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="live-total-packets">0</div>
+                        <div class="stat-label">Gesamte Pakete</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="live-gateway-packets">0</div>
+                        <div class="stat-label">Gateway-Pakete</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="live-gateway-percentage">0%</div>
+                        <div class="stat-label">Gateway-Anteil</div>
+                    </div>
+                </div>
+                
+                <h3>Live Gateway-Verkehr</h3>
+                <div class="live-packets" id="live-packets">
+                    <div class="packet-entry">Noch keine Pakete erfasst. Starten Sie die Capture, um Live-Daten zu sehen.</div>
+                </div>
+            </div>
         </div>
         
         <div class="loading" id="loading">
@@ -185,6 +333,28 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Tab-Funktionalität
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Aktiven Tab setzen
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Inhalt anzeigen
+                    const contentId = 'content-' + this.id.split('-')[1];
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === contentId) {
+                            content.classList.add('active');
+                        }
+                    });
+                });
+            });
+            
+            // PCAP-Upload-Funktionalität
             const uploadBtn = document.getElementById('upload-btn');
             const fileInput = document.getElementById('pcap-upload');
             const fileName = document.getElementById('file-name');
@@ -198,6 +368,21 @@
             const gatewayPercentage = document.getElementById('gateway-percentage');
             const gatewaysList = document.getElementById('gateways-list');
             const eventsBody = document.getElementById('events-body');
+            
+            // Live-Capture-Elemente
+            const interfaceSelect = document.getElementById('interface-select');
+            const refreshInterfacesBtn = document.getElementById('refresh-interfaces');
+            const startCaptureBtn = document.getElementById('start-capture');
+            const stopCaptureBtn = document.getElementById('stop-capture');
+            const liveStatus = document.getElementById('live-status');
+            const liveTotalPackets = document.getElementById('live-total-packets');
+            const liveGatewayPackets = document.getElementById('live-gateway-packets');
+            const liveGatewayPercentage = document.getElementById('live-gateway-percentage');
+            const livePacketsContainer = document.getElementById('live-packets');
+            
+            // WebSocket für Live-Updates
+            let webSocket = null;
+            let isCapturing = false;
             
             // Button-Klick zum Datei-Upload
             uploadBtn.addEventListener('click', function() {
@@ -290,6 +475,13 @@
                 results.style.display = 'block';
             }
             
+            // Fehlermeldung anzeigen
+            function showError(message) {
+                error.textContent = message;
+                error.style.display = 'block';
+                results.style.display = 'none';
+            }
+            
             // Gateway-Informationen laden
             function loadGateways() {
                 fetch('/api/gateways')
@@ -351,12 +543,191 @@
                 });
             }
             
-            // Fehlermeldung anzeigen
-            function showError(message) {
-                error.textContent = message;
-                error.style.display = 'block';
-                results.style.display = 'none';
+            // Netzwerkschnittstellen laden
+            function loadInterfaces() {
+                fetch('/api/interfaces')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        interfaceSelect.innerHTML = '<option value="">Netzwerkschnittstelle auswählen...</option>';
+                        
+                        data.data.forEach(iface => {
+                            // Loopback-Interfaces überspringen
+                            if (iface.is_loopback) return;
+                            
+                            const option = document.createElement('option');
+                            option.value = iface.name;
+                            option.textContent = `${iface.name} - ${iface.ip_addresses.join(', ')}`;
+                            interfaceSelect.appendChild(option);
+                        });
+                        
+                        // Start-Button aktivieren, wenn ein Interface ausgewählt ist
+                        if (interfaceSelect.options.length > 1) {
+                            startCaptureBtn.disabled = false;
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('Fehler beim Laden der Netzwerkschnittstellen:', err);
+                    showError('Fehler beim Laden der Netzwerkschnittstellen: ' + err.message);
+                });
             }
+            
+            // Schnittstellen aktualisieren
+            refreshInterfacesBtn.addEventListener('click', loadInterfaces);
+            
+            // Live-Capture starten
+            startCaptureBtn.addEventListener('click', function() {
+                const selectedInterface = interfaceSelect.value;
+                if (!selectedInterface) {
+                    showError('Bitte wählen Sie eine Netzwerkschnittstelle aus.');
+                    return;
+                }
+                
+                // UI aktualisieren
+                startCaptureBtn.disabled = true;
+                stopCaptureBtn.disabled = false;
+                interfaceSelect.disabled = true;
+                refreshInterfacesBtn.disabled = true;
+                
+                // WebSocket-Verbindung öffnen
+                connectWebSocket();
+                
+                // Live-Capture starten
+                fetch('/api/live/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        interface: selectedInterface
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        isCapturing = true;
+                        liveStatus.innerHTML = '<span class="live-indicator"></span> Live-Capture läuft';
+                        livePacketsContainer.innerHTML = '';
+                    } else {
+                        showError(data.error || 'Fehler beim Starten der Live-Capture');
+                        resetCaptureUI();
+                    }
+                })
+                .catch(err => {
+                    showError('Fehler beim Starten der Live-Capture: ' + err.message);
+                    resetCaptureUI();
+                });
+            });
+            
+            // Live-Capture stoppen
+            stopCaptureBtn.addEventListener('click', function() {
+                fetch('/api/live/stop', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        isCapturing = false;
+                        liveStatus.textContent = 'Capture gestoppt';
+                        resetCaptureUI();
+                    } else {
+                        showError(data.error || 'Fehler beim Stoppen der Live-Capture');
+                    }
+                })
+                .catch(err => {
+                    showError('Fehler beim Stoppen der Live-Capture: ' + err.message);
+                });
+                
+                // WebSocket schließen
+                if (webSocket && webSocket.readyState === WebSocket.OPEN) {
+                    webSocket.close();
+                }
+            });
+            
+            // WebSocket-Verbindung aufbauen
+            function connectWebSocket() {
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${wsProtocol}//${window.location.host}/api/ws`;
+                
+                webSocket = new WebSocket(wsUrl);
+                
+                webSocket.onopen = function() {
+                    console.log('WebSocket-Verbindung hergestellt');
+                };
+                
+                webSocket.onmessage = function(event) {
+                    try {
+                        const message = JSON.parse(event.data);
+                        
+                        if (message.type === 'packet') {
+                            // Neues Paket anzeigen
+                            addPacketToLiveView(message.data);
+                        } else if (message.type === 'stats') {
+                            // Statistiken aktualisieren
+                            updateLiveStats(message.data);
+                        }
+                    } catch (err) {
+                        console.error('Fehler beim Verarbeiten der WebSocket-Nachricht:', err);
+                    }
+                };
+                
+                webSocket.onclose = function() {
+                    console.log('WebSocket-Verbindung geschlossen');
+                };
+                
+                webSocket.onerror = function(error) {
+                    console.error('WebSocket-Fehler:', error);
+                    showError('WebSocket-Verbindungsfehler');
+                };
+            }
+            
+            // Live-Paket zur Anzeige hinzufügen
+            function addPacketToLiveView(packet) {
+                const packetEntry = document.createElement('div');
+                packetEntry.className = 'packet-entry';
+                
+                if (packet.is_gateway_traffic) {
+                    packetEntry.classList.add('gateway');
+                }
+                
+                // Formatierter Zeitstempel
+                const timestamp = new Date(packet.timestamp);
+                const time = timestamp.toLocaleTimeString('de-DE', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    fractionalSecondDigits: 3
+                });
+                
+                packetEntry.textContent = `${time} | ${packet.summary}`;
+                
+                // Am Anfang einfügen, um neueste Pakete oben zu haben
+                livePacketsContainer.insertBefore(packetEntry, livePacketsContainer.firstChild);
+                
+                // Nur die letzten 100 Pakete behalten
+                while (livePacketsContainer.children.length > 100) {
+                    livePacketsContainer.removeChild(livePacketsContainer.lastChild);
+                }
+            }
+            
+            // Live-Statistiken aktualisieren
+            function updateLiveStats(stats) {
+                liveTotalPackets.textContent = stats.total_packets || 0;
+                liveGatewayPackets.textContent = stats.gateway_packets || 0;
+                liveGatewayPercentage.textContent = ((stats.gateway_percentage || 0).toFixed(1) + '%');
+            }
+            
+            // UI zurücksetzen nach Capture-Stop
+            function resetCaptureUI() {
+                startCaptureBtn.disabled = false;
+                stopCaptureBtn.disabled = true;
+                interfaceSelect.disabled = false;
+                refreshInterfacesBtn.disabled = false;
+            }
+            
+            // Initialisierung
+            loadInterfaces();
         });
     </script>
 </body>

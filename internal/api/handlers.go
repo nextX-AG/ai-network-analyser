@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -36,8 +38,30 @@ type HealthResponse struct {
 	Components map[string]string `json:"components"`
 }
 
+// InterfaceInfo enthält Informationen über eine Netzwerkschnittstelle
+type InterfaceInfo struct {
+	Name        string   `json:"name"`
+	Index       int      `json:"index"`
+	MacAddress  string   `json:"mac_address,omitempty"`
+	IPAddresses []string `json:"ip_addresses,omitempty"`
+	IsUp        bool     `json:"is_up"`
+	IsLoopback  bool     `json:"is_loopback"`
+}
+
+// LiveCaptureRequest enthält die Anfrageparameter für die Live-Capture
+type LiveCaptureRequest struct {
+	Interface string `json:"interface"`
+	Filter    string `json:"filter,omitempty"`
+}
+
 var (
 	startTime = time.Now()
+
+	// Für die Verwaltung der aktiven Live-Capture
+	activeCaptureContext context.Context
+	activeCaptureCancel  context.CancelFunc
+	activeCaptureStatus  string = "idle" // "idle", "running", "error"
+	captureStatusMutex   sync.Mutex
 )
 
 // HealthCheckHandler liefert Informationen über den Serverstatus
@@ -194,6 +218,184 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request, upgrader websocket
 			break
 		}
 	}
+}
+
+// GetInterfacesHandler gibt eine Liste aller verfügbaren Netzwerkschnittstellen zurück
+func GetInterfacesHandler(w http.ResponseWriter, r *http.Request) {
+	// Alle Netzwerkschnittstellen abfragen
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError,
+			fmt.Sprintf("Fehler beim Abrufen der Netzwerkschnittstellen: %v", err))
+		return
+	}
+
+	// Ergebnis aufbereiten
+	var interfaceInfos []InterfaceInfo
+
+	for _, iface := range interfaces {
+		// Nur aktive und nicht-virtuelle Schnittstellen berücksichtigen
+		if iface.Flags&net.FlagUp == 0 {
+			continue // Deaktivierte Schnittstellen überspringen
+		}
+
+		// IP-Adressen der Schnittstelle abrufen
+		var ipAddresses []string
+		addrs, err := iface.Addrs()
+		if err == nil {
+			for _, addr := range addrs {
+				ipAddresses = append(ipAddresses, addr.String())
+			}
+		}
+
+		// Schnittstellen-Info erstellen
+		interfaceInfo := InterfaceInfo{
+			Name:        iface.Name,
+			Index:       iface.Index,
+			MacAddress:  iface.HardwareAddr.String(),
+			IPAddresses: ipAddresses,
+			IsUp:        iface.Flags&net.FlagUp != 0,
+			IsLoopback:  iface.Flags&net.FlagLoopback != 0,
+		}
+
+		interfaceInfos = append(interfaceInfos, interfaceInfo)
+	}
+
+	// Erfolgreiche Antwort senden
+	response := APIResponse{
+		Success: true,
+		Data:    interfaceInfos,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// StartLiveCaptureHandler startet die Live-Capture auf einer Netzwerkschnittstelle
+func StartLiveCaptureHandler(w http.ResponseWriter, r *http.Request, capturer *packet.PcapCapturer) {
+	// Prüfen, ob bereits eine Capture läuft
+	captureStatusMutex.Lock()
+	if activeCaptureStatus == "running" {
+		captureStatusMutex.Unlock()
+		respondWithError(w, http.StatusConflict, "Eine Live-Capture läuft bereits")
+		return
+	}
+	captureStatusMutex.Unlock()
+
+	// Request-Body einlesen
+	var request LiveCaptureRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Ungültiges Anfrageformat")
+		return
+	}
+
+	// Netzwerkschnittstelle prüfen
+	if request.Interface == "" {
+		respondWithError(w, http.StatusBadRequest, "Keine Netzwerkschnittstelle angegeben")
+		return
+	}
+
+	// Capture starten
+	err = capturer.OpenLiveCapture(request.Interface)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError,
+			fmt.Sprintf("Fehler beim Öffnen der Netzwerkschnittstelle: %v", err))
+		return
+	}
+
+	// Neuen Kontext für die Capture erstellen
+	activeCaptureContext, activeCaptureCancel = context.WithCancel(context.Background())
+
+	// Capture starten
+	packetChan, errChan := capturer.StartCapture(activeCaptureContext)
+
+	// Status aktualisieren
+	captureStatusMutex.Lock()
+	activeCaptureStatus = "running"
+	captureStatusMutex.Unlock()
+
+	// Verarbeitung in Goroutine starten
+	go func() {
+		var packetCount int
+		var gatewayCount int
+
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case p, ok := <-packetChan:
+				if !ok {
+					log.Println("Paketkanal geschlossen")
+					captureStatusMutex.Lock()
+					activeCaptureStatus = "idle"
+					captureStatusMutex.Unlock()
+					return
+				}
+
+				packetCount++
+				if p.IsGatewayTraffic {
+					gatewayCount++
+				}
+
+				// Hier könnte die Verarbeitung erfolgen und Daten an WebSockets gesendet werden
+				// Diese Logik ist bereits in processLivePackets im Hauptprogramm implementiert
+
+			case err, ok := <-errChan:
+				if !ok {
+					continue
+				}
+				log.Printf("Fehler bei der Live-Capture: %v", err)
+
+			case <-ticker.C:
+				log.Printf("Live-Capture Status: %d Pakete erfasst, davon %d Gateway-Pakete",
+					packetCount, gatewayCount)
+
+			case <-activeCaptureContext.Done():
+				log.Println("Live-Capture wurde gestoppt")
+				captureStatusMutex.Lock()
+				activeCaptureStatus = "idle"
+				captureStatusMutex.Unlock()
+				return
+			}
+		}
+	}()
+
+	// Erfolgreiche Antwort senden
+	response := APIResponse{
+		Success: true,
+		Message: fmt.Sprintf("Live-Capture auf Schnittstelle %s gestartet", request.Interface),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// StopLiveCaptureHandler stoppt die aktive Live-Capture
+func StopLiveCaptureHandler(w http.ResponseWriter, r *http.Request) {
+	// Prüfen, ob eine Capture läuft
+	captureStatusMutex.Lock()
+	if activeCaptureStatus != "running" {
+		captureStatusMutex.Unlock()
+		respondWithError(w, http.StatusBadRequest, "Keine aktive Live-Capture vorhanden")
+		return
+	}
+	captureStatusMutex.Unlock()
+
+	// Capture stoppen
+	if activeCaptureCancel != nil {
+		activeCaptureCancel()
+	}
+
+	// Erfolgreiche Antwort senden
+	response := APIResponse{
+		Success: true,
+		Message: "Live-Capture wurde gestoppt",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // GetGatewaysHandler gibt erkannte Gateways zurück
