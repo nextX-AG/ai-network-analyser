@@ -1014,6 +1014,44 @@
                 agentInterfaceSelect.innerHTML = '<option value="">Netzwerkschnittstelle auswählen...</option>';
                 
                 if (agent.interfaces && agent.interfaces.length > 0) {
+                    // Iterate through the interfaces and add them to the dropdown
+                    agent.interfaces.forEach(ifaceName => {
+                        // Find details for this interface if available
+                        let ifaceDetails = null;
+                        if (agent.interface_details) {
+                            ifaceDetails = agent.interface_details.find(d => d.name === ifaceName);
+                        }
+                        
+                        const option = document.createElement('option');
+                        option.value = ifaceName;
+                        
+                        // If we have details, show more information
+                        if (ifaceDetails) {
+                            let displayText = ifaceName;
+                            
+                            // Add bridge information if it's a bridge
+                            if (ifaceDetails.is_bridge) {
+                                displayText += ' (Bridge)';
+                            }
+                            
+                            // Add IP addresses if available
+                            if (ifaceDetails.ips && ifaceDetails.ips.length > 0) {
+                                displayText += ` - ${ifaceDetails.ips.join(', ')}`;
+                            }
+                            
+                            option.textContent = displayText;
+                        } else {
+                            option.textContent = ifaceName;
+                        }
+                        
+                        // Mark as selected if this is the active interface
+                        if (agent.active_interface === ifaceName) {
+                            option.selected = true;
+                        }
+                        
+                        agentInterfaceSelect.appendChild(option);
+                    });
+                    
                     agentStartCaptureBtn.disabled = false;
                 } else {
                     agentStartCaptureBtn.disabled = true;
@@ -1096,8 +1134,8 @@
                 agentStopCaptureBtn.disabled = false;
                 agentInterfaceSelect.disabled = true;
                 
-                // Capture-Anfrage senden
-                fetch('/api/agents/capture/start', {
+                // 1. Zuerst die Schnittstelle auf dem Agenten setzen
+                fetch('/api/agents/set-interface', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1105,6 +1143,35 @@
                     body: JSON.stringify({
                         name: selectedAgent.name,
                         interface: selectedInterface
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 2. Nach erfolgreicher Schnittstellenauswahl die Capture starten
+                        startAgentCapture(selectedAgent.name, selectedInterface);
+                    } else {
+                        showError(data.error || 'Fehler beim Setzen der Remote-Schnittstelle');
+                        resetAgentCaptureUI();
+                    }
+                })
+                .catch(err => {
+                    showError('Fehler beim Setzen der Remote-Schnittstelle: ' + err.message);
+                    resetAgentCaptureUI();
+                });
+            });
+            
+            // Hilfsfunktion zum Starten der Capture auf dem Agent
+            function startAgentCapture(agentName, interfaceName) {
+                // Capture-Anfrage senden
+                fetch('/api/agents/capture/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: agentName,
+                        interface: interfaceName
                     })
                 })
                 .then(response => response.json())
@@ -1124,7 +1191,7 @@
                     showError('Fehler beim Starten der Remote-Capture: ' + err.message);
                     resetAgentCaptureUI();
                 });
-            });
+            }
             
             // Capture auf dem Agent stoppen
             agentStopCaptureBtn.addEventListener('click', function() {
