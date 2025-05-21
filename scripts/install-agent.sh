@@ -149,7 +149,13 @@ echo "Aktuelles Verzeichnis: $(pwd)"
 echo "Inhalt go.mod:"
 cat go.mod
 
-# Kompilieren mit vollständigem Pfad zur Go-Binary
+# Erst Abhängigkeiten herunterladen und go.sum aktualisieren
+echo -e "${YELLOW}Abhängigkeiten herunterladen...${NC}"
+/usr/local/go/bin/go mod download
+/usr/local/go/bin/go mod tidy
+
+# Dann kompilieren
+echo -e "${YELLOW}Agent kompilieren...${NC}"
 /usr/local/go/bin/go build -v -o agent cmd/agent/main.go
 
 if [ ! -f "agent" ]; then
