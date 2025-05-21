@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -105,7 +106,7 @@ func LoadConfig(configPath string) (*Config, error) {
 
 	// Konfigurationsdatei lesen, falls vorhanden
 	if configPath != "" {
-		file, err := os.ReadFile(configPath)
+		file, err := ioutil.ReadFile(configPath)
 		if err != nil {
 			return nil, fmt.Errorf("Fehler beim Lesen der Konfigurationsdatei: %w", err)
 		}
@@ -188,7 +189,7 @@ func SaveConfig(config *Config, configPath string) error {
 		return fmt.Errorf("Fehler beim Umwandeln der Konfiguration in JSON: %w", err)
 	}
 
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+	if err := ioutil.WriteFile(configPath, data, 0644); err != nil {
 		return fmt.Errorf("Fehler beim Speichern der Konfigurationsdatei: %w", err)
 	}
 
