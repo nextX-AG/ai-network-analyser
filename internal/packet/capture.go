@@ -642,3 +642,11 @@ func getDefaultGateway() (net.IP, error) {
 	// hauptsächlich über DHCP und ARP durchführen
 	return nil, fmt.Errorf("Plattformspezifische Gateway-Erkennung nicht implementiert")
 }
+
+// UpdateInterface aktualisiert die in der Konfiguration verwendete Schnittstelle
+func (c *PcapCapturer) UpdateInterface(interfaceName string) {
+	if c.config != nil {
+		c.config.Interface = interfaceName
+		fmt.Printf("Schnittstelle in der Konfiguration aktualisiert auf: %s\n", interfaceName)
+	}
+}

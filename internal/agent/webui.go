@@ -454,12 +454,21 @@ func (a *CaptureAgent) configHandler(w http.ResponseWriter, r *http.Request) {
 	a.config.Agent.Interface = req.Interface
 	a.config.Agent.APIKey = req.APIKey
 
+	// Status aktualisieren - Wichtig für sofortige UI-Updates
+	a.statusMutex.Lock()
+	a.status.Name = req.Name
+	a.status.Interface = req.Interface
+	a.statusMutex.Unlock()
+
 	// Konfiguration speichern
 	if err := a.saveConfig(); err != nil {
 		log.Printf("Fehler beim Speichern der Konfiguration: %v", err)
 		respondWithErrorJSON(w, fmt.Sprintf("Konfiguration konnte nicht gespeichert werden: %v", err))
 		return
 	}
+
+	// Auch den Status im Capturer aktualisieren, damit die Änderungen beim nächsten Neustart erhalten bleiben
+	a.capturer.UpdateInterface(req.Interface)
 
 	// Erfolgreiche Antwort senden
 	respondWithSuccessJSON(w, "Konfiguration erfolgreich gespeichert", nil)
@@ -492,10 +501,10 @@ func (a *CaptureAgent) saveConfig() error {
 	execDir = filepath.Dir(execDir)
 
 	configPaths = append(configPaths,
-		filepath.Join(execDir, "configs", "agent.json"),                  // /opt/ki-network-analyzer/configs/agent.json
-		"/etc/ki-network-analyzer/agent.json",                            // Standard-Systemkonfiguration
-		filepath.Join(execDir, "agent.json"),                             // Direkt im Executable-Verzeichnis
-		filepath.Join(os.TempDir(), "ki-network-analyzer", "agent.json"), // Temp-Verzeichnis als letzten Ausweg
+		filepath.Join(execDir, "configs", "agent.json"),
+		"/etc/ki-network-analyzer/agent.json",
+		filepath.Join(execDir, "agent.json"),
+		filepath.Join(os.TempDir(), "ki-network-analyzer", "agent.json"),
 	)
 
 	// Variable für den letzten Fehler
@@ -576,6 +585,13 @@ func (a *CaptureAgent) restartHandler(w http.ResponseWriter, r *http.Request) {
 	if a.cancelFunc != nil {
 		log.Println("Stopping current capture before restart")
 		a.cancelFunc()
+	}
+
+	// Sicherstellen, dass die aktuelle Konfiguration gespeichert wird, bevor wir neustarten
+	if err := a.saveConfig(); err != nil {
+		log.Printf("Warnung: Konfiguration konnte vor Neustart nicht gespeichert werden: %v", err)
+	} else {
+		log.Println("Konfiguration vor Neustart gespeichert")
 	}
 
 	// Informieren Sie alle WebSocket-Clients über den Neustart
