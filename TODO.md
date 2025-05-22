@@ -70,8 +70,9 @@ This document provides a high-level overview of the current tasks for the KI-Net
 ## Current Agent Issues to Fix
 - [x] Fix packet counter display in UI when packets are captured (Agent shows captured packets but UI doesn't)
 - [x] Fix heartbeat mechanism to include captured packet count in status updates
-- [ ] Implement WebSocket status updates for real-time packet counting display
+- [x] Implement workaround for UI updating with real-time packet counts via polling
 - [x] Ensure interface configuration is correctly persisted between agent restarts
+- [x] Fix Server-URL configuration persistence and prioritization of saved values
 - [x] Add detailed logging for agent configuration saving/loading process
 - [ ] Implement proper error handling for WebSocket communication failures
 - [ ] Add server-side packet counter validation against agent-reported values
