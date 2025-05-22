@@ -191,10 +191,10 @@ This document provides a high-level overview of the current tasks for the KI-Net
 - [x] Anpassen der API-Aufrufe und Services für die neue Struktur
 
 ### Feature: Network Capture
-- [ ] Erstellen des `features/networkCapture` Verzeichnisses mit Unterordnern
-- [ ] Migrieren der NetworkCapturePage.jsx in die neue Struktur
-- [ ] Migrieren und Refaktorisieren der NetworkCapturePanel.jsx
-- [ ] Erstellen spezialisierter Komponenten für Capture-Steuerung und -Anzeige
+- [x] Erstellen des `features/networkCapture` Verzeichnisses mit Unterordnern
+- [x] Migrieren der NetworkCapturePage.jsx in die neue Struktur
+- [x] Migrieren und Refaktorisieren der NetworkCapturePanel.jsx
+- [x] Erstellen spezialisierter Komponenten für Capture-Steuerung und -Anzeige
 - [ ] Aktualisieren der Routen in der App für die neue Struktur
 
 ### Feature: Timeline
