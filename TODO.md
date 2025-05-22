@@ -86,3 +86,38 @@ This document provides a high-level overview of the current tasks for the KI-Net
 4. Begin development of the Three.js timeline visualization
 5. Set up Docker configuration for development
 6. Begin AI integration for packet analysis 
+
+## Packet Filtering Implementation
+
+### UI Components
+- [ ] Design and implement filter input section in server UI
+- [ ] Add text field for manual BPF filter syntax entry
+- [ ] Create UI for source/destination IP address filtering
+- [ ] Create UI for port filtering (source and destination)
+- [ ] Create UI for protocol filtering (TCP, UDP, ICMP, etc.)
+- [ ] Create UI for MAC address filtering
+- [ ] Implement filter combination mechanism (AND/OR operators)
+- [ ] Add filter presets for common use cases (HTTP/HTTPS, DNS, etc.)
+- [ ] Implement filter validation to prevent syntax errors
+- [ ] Create UI for saved filter management
+
+### Server-Side Implementation
+- [ ] Extend API endpoints to accept filter parameters
+- [ ] Implement filter parameter validation on server
+- [ ] Create filter parser to convert UI filters to BPF syntax
+- [ ] Extend capture configuration to include filters
+- [ ] Implement filter state persistence in session
+
+### Agent-Side Implementation
+- [ ] Extend agent capture API to accept BPF filter parameters
+- [ ] Apply BPF filters to PcapCapturer at capture start
+- [ ] Implement proper error handling for invalid filters
+- [ ] Add filter feedback mechanism to detect inefficient filters
+- [ ] Update agent status to include current active filter
+
+### Testing and Documentation
+- [ ] Create test cases for various filter combinations
+- [ ] Document BPF syntax for advanced users
+- [ ] Create example filters for common network analysis tasks
+- [ ] Test filter performance on high-volume captures
+- [ ] Document filter best practices in user guide 
