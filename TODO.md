@@ -90,30 +90,32 @@ This document provides a high-level overview of the current tasks for the KI-Net
 ## Packet Filtering Implementation
 
 ### UI Components
-- [ ] Design and implement filter input section in server UI
-- [ ] Add text field for manual BPF filter syntax entry
-- [ ] Create UI for source/destination IP address filtering
-- [ ] Create UI for port filtering (source and destination)
-- [ ] Create UI for protocol filtering (TCP, UDP, ICMP, etc.)
-- [ ] Create UI for MAC address filtering
-- [ ] Implement filter combination mechanism (AND/OR operators)
-- [ ] Add filter presets for common use cases (HTTP/HTTPS, DNS, etc.)
-- [ ] Implement filter validation to prevent syntax errors
-- [ ] Create UI for saved filter management
+- [x] Design and implement filter input section in server UI
+- [x] Add text field for manual BPF filter syntax entry
+- [x] Create UI for source/destination IP address filtering
+- [x] Create UI for port filtering (source and destination)
+- [x] Create UI for protocol filtering (TCP, UDP, ICMP, etc.)
+- [x] Create UI for MAC address filtering
+- [x] Implement filter combination mechanism (AND/OR operators)
+- [x] Add filter presets for common use cases (HTTP/HTTPS, DNS, etc.)
+- [x] Implement filter validation to prevent syntax errors
+- [x] Create UI for saved filter management
+- [ ] Integrate filter UI into Remote-Agents tab instead of separate page
+- [ ] Update agent management UI to display active filters
 
 ### Server-Side Implementation
-- [ ] Extend API endpoints to accept filter parameters
-- [ ] Implement filter parameter validation on server
-- [ ] Create filter parser to convert UI filters to BPF syntax
-- [ ] Extend capture configuration to include filters
-- [ ] Implement filter state persistence in session
+- [x] Extend API endpoints to accept filter parameters
+- [x] Implement filter parameter validation on server
+- [x] Create filter parser to convert UI filters to BPF syntax
+- [x] Extend capture configuration to include filters
+- [x] Implement filter state persistence in session
 
 ### Agent-Side Implementation
-- [ ] Extend agent capture API to accept BPF filter parameters
-- [ ] Apply BPF filters to PcapCapturer at capture start
-- [ ] Implement proper error handling for invalid filters
-- [ ] Add filter feedback mechanism to detect inefficient filters
-- [ ] Update agent status to include current active filter
+- [x] Extend agent capture API to accept BPF filter parameters
+- [x] Apply BPF filters to PcapCapturer at capture start
+- [x] Implement proper error handling for invalid filters
+- [x] Add filter feedback mechanism to detect inefficient filters
+- [x] Update agent status to include current active filter
 
 ### Testing and Documentation
 - [ ] Create test cases for various filter combinations
@@ -121,3 +123,123 @@ This document provides a high-level overview of the current tasks for the KI-Net
 - [ ] Create example filters for common network analysis tasks
 - [ ] Test filter performance on high-volume captures
 - [ ] Document filter best practices in user guide 
+- [ ] Document filter integration in agent management UI
+
+### Integration Plan
+- [ ] Refactor NetworkFilterPanel to be agent-specific
+- [ ] Add filter section to each agent card in Remote-Agents UI
+- [ ] Ensure filter state is saved per agent
+- [ ] Implement filter synchronization between UI and agent status 
+
+## Integration der Filterfunktionalität in Remote-Agents UI
+
+### Vorbereitende Analyse
+- [ ] Identifizierung der relevanten Komponenten im Remote-Agents-Tab
+- [ ] Analyse der bestehenden Agent-Karten-Struktur
+- [ ] Festlegung optimaler Positionierung der Filter-UI innerhalb der Agent-Karte
+
+### Refactoring der Filterkomponente
+- [ ] Anpassung der NetworkFilterPanel-Komponente für agentenspezifische Verwendung
+- [ ] Implementierung von Props für Agent-ID und Status-Weitergabe
+- [ ] Optimierung der UI-Größe und Darstellung für kompakte Integration
+- [ ] Erstellung eines Filter-Collapse-Panels pro Agent für erweiterbaren Filterbereich
+
+### UI-Integration und Erweiterungen
+- [ ] Integration des NetworkFilterPanels in die Agent-Detailansicht
+- [ ] Erweiterung der Agent-Karte um Filterstatusanzeige (aktiver Filter)
+- [ ] Hinzufügen von visueller Indikation für aktive Filter in der Agentenübersicht
+- [ ] Anpassung der Filterfunktion an den aktuellen UI-Stil
+
+### Datenspeicherung und Zustandsmanagement
+- [ ] Implementierung eines agentenspezifischen Filter-Zustandsmanagements
+- [ ] Persistenz der Filter-Einstellungen pro Agent im lokalen Speicher
+- [ ] Synchronisation des Filter-Zustands mit dem Agentenstatus
+- [ ] Erweiterung der Agentenverbindungsverwaltung für Filterübertragung
+
+### Backend-Anpassungen
+- [ ] Überprüfung der bestehenden API für agentenspezifische Filterverarbeitung
+- [ ] Erweiterung der Agent-Status-API um Filterinformationen (falls erforderlich)
+- [ ] Optimierung der Filter-Validierung für Echtzeitfeedback
+
+### Benutzererfahrung und Dokumentation
+- [ ] Hinzufügen von Tooltips und Hilfetexten zur Filter-Bedienung
+- [ ] Erstellung einfacher Beispielfilter für häufige Anwendungsfälle
+- [ ] Dokumentation der Filterfunktion in der Benutzeranleitung
+- [ ] Erstellen von Fehlermeldungen bei ungültigen Filterausdrücken
+
+### Tests und Qualitätssicherung
+- [ ] Erstellen von Testfällen für die integrierte Filterfunktion
+- [ ] Testen der UI auf verschiedenen Bildschirmgrößen
+- [ ] Performance-Tests mit mehreren Agenten und aktiven Filtern
+- [ ] Integration in bestehende Testsuite 
+
+## Frontend-Refactoring: Feature-basierte Organisation
+
+### Struktur und Setup
+- [ ] Erstellen der neuen Feature-basierten Verzeichnisstruktur im Frontend
+- [ ] Einrichten der `shared` Verzeichnisse für gemeinsam genutzte Komponenten
+- [ ] Aktualisieren der Import-Pfade in Haupt-App-Dateien (App.jsx, index.jsx)
+- [ ] Aktualisieren der Build-Konfiguration für die neue Struktur
+
+### Feature: Remote Agents
+- [ ] Erstellen des `features/remoteAgents` Verzeichnisses mit Unterordnern
+- [ ] Migrieren der RemoteAgentsContainer.jsx in die neue Struktur
+- [ ] Extrahieren und Migrieren der Agent-Komponenten aus dem network-Verzeichnis
+- [ ] Erstellen einer neuen RemoteAgentsPage.jsx als Container-Komponente
+- [ ] Refaktorisieren der AgentCardWithFilter.jsx in kleinere, spezialisierte Komponenten
+- [ ] Migrieren und Refaktorisieren der Filter-Komponenten für Agent-spezifische Nutzung
+- [ ] Anpassen der API-Aufrufe und Services für die neue Struktur
+
+### Feature: Network Capture
+- [ ] Erstellen des `features/networkCapture` Verzeichnisses mit Unterordnern
+- [ ] Migrieren der NetworkCapturePage.jsx in die neue Struktur
+- [ ] Migrieren und Refaktorisieren der NetworkCapturePanel.jsx
+- [ ] Erstellen spezialisierter Komponenten für Capture-Steuerung und -Anzeige
+- [ ] Aktualisieren der Routen in der App für die neue Struktur
+
+### Feature: Timeline
+- [ ] Erstellen des `features/timeline` Verzeichnisses mit Unterordnern
+- [ ] Migrieren existierender Timeline-Komponenten in die neue Struktur
+- [ ] Entwickeln einer neuen TimelinePage.jsx als Container-Komponente
+- [ ] Aktualisieren der Timeline-spezifischen Services und API-Aufrufe
+
+### Feature: AI Integration
+- [ ] Erstellen des `features/ai` Verzeichnisses mit Unterordnern
+- [ ] Migrieren der KI-bezogenen Komponenten aus verschiedenen Verzeichnissen
+- [ ] Entwickeln einer neuen AIAssistantPage.jsx als Container-Komponente
+- [ ] Aktualisieren der KI-spezifischen Services und API-Aufrufe
+
+### Shared-Komponenten
+- [ ] Identifizieren gemeinsam genutzter UI-Komponenten in der aktuellen Struktur
+- [ ] Migrieren dieser Komponenten in das `shared/components` Verzeichnis
+- [ ] Refaktorisieren gemeinsam genutzter Hooks in das `shared/hooks` Verzeichnis
+- [ ] Extrahieren und Migrieren gemeinsam genutzter Utilities
+- [ ] Aktualisieren aller Imports für die gemeinsam genutzten Komponenten
+
+### Tests und Qualitätssicherung
+- [ ] Erstellen von Komponententests für die migrierten Features
+- [ ] Durchführen manueller Tests für alle migrierten Features
+- [ ] Überprüfen aller Routen und Navigationen
+- [ ] Sicherstellen der korrekten Funktionalität aller interaktiven Elemente
+- [ ] Validieren der API-Integration und Datenflüsse
+
+### Dokumentation
+- [ ] Aktualisieren der Frontend-Dokumentation in ARCHITECTURE.md
+- [ ] Erstellen von README-Dateien für jedes Feature-Verzeichnis
+- [ ] Dokumentieren der Komponenten-API und Props
+- [ ] Aktualisieren aller Code-Kommentare entsprechend der neuen Struktur
+- [ ] Erstellen einer Migrationsdokumentation für zukünftige Entwickler
+
+### Aufräumen
+- [ ] Entfernen duplizierter Code nach der Migration
+- [ ] Entfernen nicht mehr benötigter Verzeichnisse und Dateien
+- [ ] Optimieren der Import-Statements in allen Dateien
+- [ ] Anpassen des Code-Styles für Konsistenz
+- [ ] Durchführen einer finalen Code-Review des refaktorierten Codes
+
+### Deployment und Integration
+- [ ] Testen des Builds der refaktorierten Anwendung
+- [ ] Überprüfen der Kompatibilität mit dem Backend
+- [ ] Sicherstellen, dass die neue Struktur im Entwicklungsworkflow funktioniert
+- [ ] Bereitstellen der aktualisierten Anwendung in der Testumgebung
+- [ ] Validieren der End-to-End-Funktionalität nach dem Refactoring 
