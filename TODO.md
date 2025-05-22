@@ -176,19 +176,19 @@ This document provides a high-level overview of the current tasks for the KI-Net
 ## Frontend-Refactoring: Feature-basierte Organisation
 
 ### Struktur und Setup
-- [ ] Erstellen der neuen Feature-basierten Verzeichnisstruktur im Frontend
+- [x] Erstellen der neuen Feature-basierten Verzeichnisstruktur im Frontend
 - [ ] Einrichten der `shared` Verzeichnisse für gemeinsam genutzte Komponenten
 - [ ] Aktualisieren der Import-Pfade in Haupt-App-Dateien (App.jsx, index.jsx)
 - [ ] Aktualisieren der Build-Konfiguration für die neue Struktur
 
 ### Feature: Remote Agents
-- [ ] Erstellen des `features/remoteAgents` Verzeichnisses mit Unterordnern
-- [ ] Migrieren der RemoteAgentsContainer.jsx in die neue Struktur
-- [ ] Extrahieren und Migrieren der Agent-Komponenten aus dem network-Verzeichnis
-- [ ] Erstellen einer neuen RemoteAgentsPage.jsx als Container-Komponente
-- [ ] Refaktorisieren der AgentCardWithFilter.jsx in kleinere, spezialisierte Komponenten
-- [ ] Migrieren und Refaktorisieren der Filter-Komponenten für Agent-spezifische Nutzung
-- [ ] Anpassen der API-Aufrufe und Services für die neue Struktur
+- [x] Erstellen des `features/remoteAgents` Verzeichnisses mit Unterordnern
+- [x] Migrieren der RemoteAgentsContainer.jsx in die neue Struktur
+- [x] Extrahieren und Migrieren der Agent-Komponenten aus dem network-Verzeichnis
+- [x] Erstellen einer neuen RemoteAgentsPage.jsx als Container-Komponente
+- [x] Refaktorisieren der AgentCardWithFilter.jsx in kleinere, spezialisierte Komponenten
+- [x] Migrieren und Refaktorisieren der Filter-Komponenten für Agent-spezifische Nutzung
+- [x] Anpassen der API-Aufrufe und Services für die neue Struktur
 
 ### Feature: Network Capture
 - [ ] Erstellen des `features/networkCapture` Verzeichnisses mit Unterordnern
