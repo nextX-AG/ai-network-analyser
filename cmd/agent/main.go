@@ -101,22 +101,36 @@ func main() {
 		cfg = config.DefaultConfig()
 	}
 
-	// Override config with command line flags
-	if *listenAddr != "" {
+	// Override config with command line flags, but only if they are explicitly set
+	if cfg.Agent == nil {
 		cfg.Agent = &config.AgentConfig{
 			Listen:    *listenAddr,
 			ServerURL: *serverAddr,
 			Interface: *interface_,
 			Name:      agentName,
 		}
-	} else if cfg.Agent == nil {
-		cfg.Agent = &config.AgentConfig{
-			Listen:    "0.0.0.0:8090",
-			ServerURL: "http://localhost:9090",
-			Interface: *interface_,
-			Name:      agentName,
+	} else {
+		// Werte nur überschreiben, wenn nicht leer
+		if *listenAddr != "" {
+			cfg.Agent.Listen = *listenAddr
+		}
+		if *serverAddr != "" && *serverAddr != "http://localhost:9090" {
+			// Nur überschreiben, wenn explizit ein anderer Wert als der Standard angegeben wurde
+			cfg.Agent.ServerURL = *serverAddr
+		}
+		if *interface_ != "" {
+			cfg.Agent.Interface = *interface_
+		}
+		if *name != "" {
+			cfg.Agent.Name = *name
 		}
 	}
+
+	// Logge wichtige Konfigurationswerte für Debug-Zwecke
+	log.Printf("Wichtige Konfigurationswerte:")
+	log.Printf("- Server-URL: %s", cfg.Agent.ServerURL)
+	log.Printf("- Interface: %s", cfg.Agent.Interface)
+	log.Printf("- Agent-Name: %s", cfg.Agent.Name)
 
 	// Create context for clean shutdown
 	ctx, cancel := context.WithCancel(context.Background())
