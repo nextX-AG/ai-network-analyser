@@ -232,7 +232,7 @@ This document provides a high-level overview of the current tasks for the KI-Net
 
 ### Aufräumen
 - [ ] Entfernen duplizierter Code nach der Migration
-- [ ] Entfernen nicht mehr benötigter Verzeichnisse und Dateien
+- [x] Entfernen nicht mehr benötigter Verzeichnisse und Dateien
 - [ ] Optimieren der Import-Statements in allen Dateien
 - [ ] Anpassen des Code-Styles für Konsistenz
 - [ ] Durchführen einer finalen Code-Review des refaktorierten Codes
