@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"os/user"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"syscall"
@@ -51,16 +52,52 @@ func main() {
 		}
 	}
 
+	// Determine config file path
+	configFilePath := *configFile
+	if configFilePath == "" {
+		// Check for last known config path
+		execDir, _ := os.Executable()
+		execDir = filepath.Dir(execDir)
+		lastConfigPath := filepath.Join(execDir, "last_config_path")
+
+		if data, err := os.ReadFile(lastConfigPath); err == nil {
+			savedPath := string(data)
+			if _, err := os.Stat(savedPath); err == nil {
+				configFilePath = savedPath
+				log.Printf("Verwende gespeicherten Konfigurationspfad: %s", configFilePath)
+			}
+		}
+
+		// Fallbacks prüfen, falls keine gespeicherte Konfiguration gefunden wurde
+		if configFilePath == "" {
+			potentialPaths := []string{
+				filepath.Join(execDir, "configs", "agent.json"),
+				"/etc/ki-network-analyzer/agent.json",
+				filepath.Join(execDir, "agent.json"),
+			}
+
+			for _, path := range potentialPaths {
+				if _, err := os.Stat(path); err == nil {
+					configFilePath = path
+					log.Printf("Verwende existierende Konfigurationsdatei: %s", configFilePath)
+					break
+				}
+			}
+		}
+	}
+
 	// Load configuration if specified
 	var cfg *config.Config
 	var err error
-	if *configFile != "" {
-		cfg, err = config.LoadConfig(*configFile)
+	if configFilePath != "" {
+		log.Printf("Lade Konfiguration aus: %s", configFilePath)
+		cfg, err = config.LoadConfig(configFilePath)
 		if err != nil {
 			log.Fatalf("Error loading configuration: %v", err)
 		}
 	} else {
 		// Use default configuration
+		log.Println("Verwende Standardkonfiguration (keine Konfigurationsdatei gefunden)")
 		cfg = config.DefaultConfig()
 	}
 

@@ -494,21 +494,37 @@ func (a *CaptureAgent) saveConfig() error {
 	// Wenn ein Konfigurationspfad als Argument übergeben wurde, versuchen wir zuerst dort
 	if configArgPath != "" {
 		configPaths = append(configPaths, configArgPath)
+		log.Printf("Konfigurationspfad aus Befehlszeile: %s", configArgPath)
 	}
 
 	// Weitere Pfade hinzufügen, die wir versuchen werden, nach Priorität sortiert
 	execDir, _ := os.Executable()
 	execDir = filepath.Dir(execDir)
 
-	configPaths = append(configPaths,
+	additionalPaths := []string{
 		filepath.Join(execDir, "configs", "agent.json"),
 		"/etc/ki-network-analyzer/agent.json",
 		filepath.Join(execDir, "agent.json"),
 		filepath.Join(os.TempDir(), "ki-network-analyzer", "agent.json"),
-	)
+	}
+
+	for _, path := range additionalPaths {
+		// Prüfe, ob die Datei bereits existiert
+		_, err := os.Stat(path)
+		exists := !os.IsNotExist(err)
+
+		if exists {
+			log.Printf("Vorhandene Konfigurationsdatei gefunden: %s", path)
+		}
+
+		configPaths = append(configPaths, path)
+	}
 
 	// Variable für den letzten Fehler
 	var lastErr error
+
+	// Variable für erfolgreichen Pfad
+	var successPath string
 
 	// Versuche alle Pfade nacheinander
 	for _, configPath := range configPaths {
@@ -548,11 +564,23 @@ func (a *CaptureAgent) saveConfig() error {
 
 		// Bei Erfolg eine Meldung ausgeben
 		log.Printf("Konfiguration erfolgreich in %s gespeichert", configPath)
+		successPath = configPath
 
 		// Wenn die Datei neu erstellt wurde, Berechtigungen setzen
 		if !fileExists {
 			if err := os.Chmod(configPath, 0664); err != nil { // rw-rw-r--
 				log.Printf("Warnung: Konnte Berechtigungen nicht setzen: %v", err)
+			}
+		}
+
+		// Speichere den erfolgreichen Pfad für zukünftige Verwendung
+		if successPath != "" {
+			// Speichere den Pfad in einer Datei im Ausführungsverzeichnis
+			configInfoPath := filepath.Join(execDir, "last_config_path")
+			if err := os.WriteFile(configInfoPath, []byte(successPath), 0664); err != nil {
+				log.Printf("Warnung: Konnte letzten Konfigurationspfad nicht speichern: %v", err)
+			} else {
+				log.Printf("Letzter erfolgreicher Konfigurationspfad gespeichert in: %s", configInfoPath)
 			}
 		}
 

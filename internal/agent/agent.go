@@ -558,14 +558,17 @@ func (a *CaptureAgent) heartbeatRoutine() {
 		a.statusMutex.Lock()
 		a.status.LastHeartbeat = time.Now()
 		currentStatus := a.status.Status
+		packetsCaptured := a.status.PacketsCaptured
 		a.statusMutex.Unlock()
 
 		// Heartbeat an den Hauptserver senden, wenn eine Server-URL konfiguriert ist
 		if a.config.Agent.ServerURL != "" {
 			// Heartbeat-Daten vorbereiten
-			heartbeatData := map[string]string{
-				"name":   a.config.Agent.Name,
-				"status": currentStatus,
+			heartbeatData := map[string]interface{}{
+				"name":             a.config.Agent.Name,
+				"status":           currentStatus,
+				"packets_captured": packetsCaptured,
+				"interface":        a.config.Agent.Interface,
 			}
 
 			jsonData, err := json.Marshal(heartbeatData)
@@ -602,11 +605,11 @@ func (a *CaptureAgent) heartbeatRoutine() {
 			if resp.StatusCode != http.StatusOK {
 				log.Printf("Heartbeat wurde vom Server nicht akzeptiert. Status: %d", resp.StatusCode)
 			} else {
-				log.Printf("Heartbeat: Agent %s ist aktiv und mit dem Server verbunden", a.config.Agent.Name)
+				log.Printf("Heartbeat: Agent %s ist aktiv und mit dem Server verbunden (Pakete: %d)", a.config.Agent.Name, packetsCaptured)
 			}
 		} else {
 			// Kein Server konfiguriert, lokale Protokollierung
-			log.Printf("Heartbeat: Agent %s is alive (keine Server-Verbindung)", a.config.Agent.Name)
+			log.Printf("Heartbeat: Agent %s is alive (keine Server-Verbindung, Pakete: %d)", a.config.Agent.Name, packetsCaptured)
 		}
 	}
 }

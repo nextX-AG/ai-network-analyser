@@ -19,6 +19,7 @@ type RemoteAgent struct {
 	Interfaces       []string                 `json:"interfaces"`
 	InterfaceDetails []map[string]interface{} `json:"interface_details"`
 	ActiveInterface  string                   `json:"active_interface"`
+	PacketsCaptured  int                      `json:"packets_captured"`
 	Version          string                   `json:"version"`
 	OS               string                   `json:"os"`
 	Hostname         string                   `json:"hostname"`
@@ -136,8 +137,10 @@ func HeartbeatHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Request-Body parsen
 	var req struct {
-		Name   string `json:"name"`
-		Status string `json:"status"`
+		Name            string `json:"name"`
+		Status          string `json:"status"`
+		PacketsCaptured int    `json:"packets_captured"`
+		Interface       string `json:"interface"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Ungültiges Anfrageformat")
@@ -158,6 +161,18 @@ func HeartbeatHandler(w http.ResponseWriter, r *http.Request) {
 		if req.Status != "" {
 			agent.Status = req.Status
 		}
+
+		// Interface und Paketzähler aktualisieren, wenn sie im Heartbeat enthalten sind
+		if req.Interface != "" {
+			agent.ActiveInterface = req.Interface
+		}
+
+		// Paketzähler aktualisieren
+		agent.PacketsCaptured = req.PacketsCaptured
+
+		// Füge Logausgabe für Debug-Zwecke hinzu
+		log.Printf("Heartbeat von Agent %s erhalten: Status=%s, Pakete=%d, Interface=%s",
+			req.Name, req.Status, req.PacketsCaptured, req.Interface)
 	}
 	remoteAgentsMutex.Unlock()
 
