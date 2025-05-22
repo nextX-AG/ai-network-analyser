@@ -32,7 +32,8 @@ import {
   MAC_FILTER_TYPES,
   COMMON_PORTS,
   LOGICAL_OPERATORS
-} from './filterConstants';
+} from '../../../shared/constants/filterConstants';
+import { convertToBpfSyntax } from '../../../shared/utils/filterUtils';
 
 /**
  * AgentFilter - Filterpanel für einen spezifischen Agenten
@@ -220,37 +221,9 @@ const AgentFilter = ({ onApplyFilter, currentFilter, agentId }) => {
     localStorage.setItem(`savedFilters_agent_${agentId}`, JSON.stringify(updatedFilters));
   };
 
-  // Konvertiert die aktiven Filter in BPF-Syntax
+  // Verwende die importierte Funktion zum Konvertieren von Filtern in BPF-Syntax
   const generateBpfFilter = () => {
-    if (activeFilters.length === 0) return '';
-    
-    return activeFilters.map((filter, index) => {
-      let bpfPart = '';
-      
-      // Füge den logischen Operator hinzu, wenn nicht der erste Filter
-      if (index > 0) {
-        bpfPart += filter.logicalOperator === 'and' ? ' and ' : ' or ';
-      }
-      
-      switch (filter.type) {
-        case 'ip':
-          bpfPart += `${filter.subType === 'src' ? 'src' : 'dst'} host ${filter.value}`;
-          break;
-        case 'port':
-          bpfPart += `${filter.subType === 'src' ? 'src' : 'dst'} port ${filter.value}`;
-          break;
-        case 'protocol':
-          bpfPart += filter.subType.toLowerCase();
-          break;
-        case 'mac':
-          bpfPart += `ether ${filter.subType === 'src' ? 'src' : 'dst'} ${filter.value}`;
-          break;
-        default:
-          return '';
-      }
-      
-      return bpfPart;
-    }).join('');
+    return convertToBpfSyntax(activeFilters);
   };
 
   return (

@@ -1,5 +1,5 @@
 /**
- * Konstanten für die Filter-Komponenten
+ * Gemeinsam genutzte Konstanten für die Filter-Komponenten
  */
 
 // IP-Filter-Typen

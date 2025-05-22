@@ -177,7 +177,7 @@ This document provides a high-level overview of the current tasks for the KI-Net
 
 ### Struktur und Setup
 - [x] Erstellen der neuen Feature-basierten Verzeichnisstruktur im Frontend
-- [ ] Einrichten der `shared` Verzeichnisse für gemeinsam genutzte Komponenten
+- [x] Einrichten der `shared` Verzeichnisse für gemeinsam genutzte Komponenten
 - [ ] Aktualisieren der Import-Pfade in Haupt-App-Dateien (App.jsx, index.jsx)
 - [ ] Aktualisieren der Build-Konfiguration für die neue Struktur
 
@@ -210,11 +210,11 @@ This document provides a high-level overview of the current tasks for the KI-Net
 - [ ] Aktualisieren der KI-spezifischen Services und API-Aufrufe
 
 ### Shared-Komponenten
-- [ ] Identifizieren gemeinsam genutzter UI-Komponenten in der aktuellen Struktur
-- [ ] Migrieren dieser Komponenten in das `shared/components` Verzeichnis
-- [ ] Refaktorisieren gemeinsam genutzter Hooks in das `shared/hooks` Verzeichnis
-- [ ] Extrahieren und Migrieren gemeinsam genutzter Utilities
-- [ ] Aktualisieren aller Imports für die gemeinsam genutzten Komponenten
+- [x] Identifizieren gemeinsam genutzter UI-Komponenten in der aktuellen Struktur
+- [x] Migrieren dieser Komponenten in das `shared/components` Verzeichnis
+- [x] Refaktorisieren gemeinsam genutzter Hooks in das `shared/hooks` Verzeichnis
+- [x] Extrahieren und Migrieren gemeinsam genutzter Utilities
+- [x] Aktualisieren aller Imports für die gemeinsam genutzten Komponenten
 
 ### Tests und Qualitätssicherung
 - [ ] Erstellen von Komponententests für die migrierten Features
