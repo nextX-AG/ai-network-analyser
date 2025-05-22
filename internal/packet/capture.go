@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -181,17 +182,45 @@ func (c *PcapCapturer) StartCapture(ctx context.Context) (<-chan *models.PacketI
 	packetSource.DecodeOptions.Lazy = true
 	packetSource.DecodeOptions.NoCopy = true
 
+	// Debug-Ausgabe
+	fmt.Printf("DEBUG: Starte Paketerfassung mit Linktyp: %v\n", c.handle.LinkType())
+
+	// Konfigurierter Filter aus der Konfiguration ausgeben
+	if c.config.Filter != "" {
+		fmt.Printf("DEBUG: Konfigurierter BPF-Filter: %s\n", c.config.Filter)
+	} else {
+		fmt.Printf("DEBUG: Kein BPF-Filter konfiguriert\n")
+	}
+
+	// Debug-Zähler
+	var packetCount uint64 = 0
+	lastLogTime := time.Now()
+
 	go func() {
 		defer close(c.packetChan)
 		defer close(c.errorChan)
 
+		fmt.Println("DEBUG: Paketerfassungs-Goroutine gestartet")
+
 		for {
 			select {
 			case <-ctx.Done():
+				fmt.Println("DEBUG: Paketerfassung durch Kontext beendet")
 				return
 			case packet, ok := <-packetSource.Packets():
 				if !ok {
+					fmt.Println("DEBUG: Paketquelle geschlossen")
 					return
+				}
+
+				// Paketzähler erhöhen
+				packetCount++
+
+				// Debug-Log alle 10 Pakete oder alle 5 Sekunden
+				if packetCount%10 == 0 || time.Since(lastLogTime) > 5*time.Second {
+					fmt.Printf("DEBUG: %d Pakete erfasst, letztes Paket: %d Bytes\n",
+						packetCount, packet.Metadata().Length)
+					lastLogTime = time.Now()
 				}
 
 				packetInfo, err := c.analyzePacket(packet)
@@ -207,8 +236,18 @@ func (c *PcapCapturer) StartCapture(ctx context.Context) (<-chan *models.PacketI
 				if packetInfo != nil {
 					select {
 					case c.packetChan <- packetInfo:
+						// Debug-Info alle 50 Pakete
+						if packetCount%50 == 0 {
+							fmt.Printf("DEBUG: Paket an Kanal gesendet: %s -> %s (%s)\n",
+								packetInfo.SourceIP, packetInfo.DestinationIP, packetInfo.Protocol)
+						}
 					default:
 						// Kanal voll - ignorieren
+						fmt.Println("DEBUG: Paketkanal ist voll - Paket verworfen")
+					}
+				} else {
+					if packetCount%100 == 0 {
+						fmt.Println("DEBUG: Paket wurde analysiert, aber nicht weitergeleitet (nil)")
 					}
 				}
 			}

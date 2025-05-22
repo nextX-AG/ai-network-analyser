@@ -613,12 +613,27 @@ func (a *CaptureAgent) heartbeatRoutine() {
 
 // processPackets verarbeitet eingehende Pakete
 func (a *CaptureAgent) processPackets(packetChan <-chan *models.PacketInfo, errChan <-chan error) {
+	// Debug-Ausgabe beim Start
+	log.Println("DEBUG: Paketverarbeitung gestartet")
+
+	// Zähler für das Debugging
+	debugCounter := 0
+	lastLogTime := time.Now()
+
 	for {
 		select {
 		case packet, ok := <-packetChan:
 			if !ok {
 				log.Println("Packet channel closed")
 				return
+			}
+
+			// Debug-Ausgabe alle 10 Pakete oder alle 5 Sekunden
+			debugCounter++
+			if debugCounter%10 == 0 || time.Since(lastLogTime) > 5*time.Second {
+				log.Printf("DEBUG: Paket %d empfangen: %s -> %s (Protokoll: %s, Länge: %d)",
+					debugCounter, packet.SourceIP, packet.DestinationIP, packet.Protocol, packet.Length)
+				lastLogTime = time.Now()
 			}
 
 			// Paket zählen
