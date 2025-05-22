@@ -74,6 +74,7 @@ This document provides a high-level overview of the current tasks for the KI-Net
 - [x] Ensure interface configuration is correctly persisted between agent restarts
 - [x] Fix Server-URL configuration persistence and prioritization of saved values
 - [x] Add detailed logging for agent configuration saving/loading process
+- [x] Fix CORS issues with Agent API to allow cross-origin access from main server UI
 - [ ] Implement proper error handling for WebSocket communication failures
 - [ ] Add server-side packet counter validation against agent-reported values
 
