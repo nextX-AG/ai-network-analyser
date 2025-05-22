@@ -67,6 +67,15 @@ This document provides a high-level overview of the current tasks for the KI-Net
 - [ ] Implement WebSocket protocol for real-time capture status updates
 - [ ] Add error handling for unreachable interfaces
 
+## Current Agent Issues to Fix
+- [x] Fix packet counter display in UI when packets are captured (Agent shows captured packets but UI doesn't)
+- [x] Fix heartbeat mechanism to include captured packet count in status updates
+- [ ] Implement WebSocket status updates for real-time packet counting display
+- [x] Ensure interface configuration is correctly persisted between agent restarts
+- [x] Add detailed logging for agent configuration saving/loading process
+- [ ] Implement proper error handling for WebSocket communication failures
+- [ ] Add server-side packet counter validation against agent-reported values
+
 ## Next Action Items
 
 1. Complete server-side network interface selection
