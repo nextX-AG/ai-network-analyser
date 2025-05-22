@@ -330,14 +330,18 @@ type AdminPageData struct {
 
 // RegisterAdminHandlers registriert die HTTP-Handler für die Admin-Weboberfläche
 func (a *CaptureAgent) RegisterAdminHandlers(router *mux.Router) {
+	// Admin-Subrouter mit CORS-Middleware erstellen
+	adminRouter := router.PathPrefix("/admin").Subrouter()
+	adminRouter.Use(a.corsMiddleware)
+
 	// Admin-Hauptseite
-	router.HandleFunc("/admin", a.adminHandler).Methods("GET")
+	adminRouter.HandleFunc("", a.adminHandler).Methods("GET")
 
 	// API-Endpunkte für Admin-Aktionen
-	router.HandleFunc("/admin/config", a.configHandler).Methods("POST")
-	router.HandleFunc("/admin/status", a.adminStatusHandler).Methods("GET")
-	router.HandleFunc("/admin/restart", a.restartHandler).Methods("POST")
-	router.HandleFunc("/admin/register", a.registerHandler).Methods("POST")
+	adminRouter.HandleFunc("/config", a.configHandler).Methods("POST")
+	adminRouter.HandleFunc("/status", a.adminStatusHandler).Methods("GET")
+	adminRouter.HandleFunc("/restart", a.restartHandler).Methods("POST")
+	adminRouter.HandleFunc("/register", a.registerHandler).Methods("POST")
 }
 
 // adminHandler zeigt die Admin-Weboberfläche an

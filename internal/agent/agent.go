@@ -375,6 +375,9 @@ func (a *CaptureAgent) Unregister() error {
 
 // RegisterRoutes registriert die HTTP-Endpunkte für den Agent
 func (a *CaptureAgent) RegisterRoutes(router *mux.Router) {
+	// CORS-Middleware für alle Routen hinzufügen
+	router.Use(a.corsMiddleware)
+
 	router.HandleFunc("/health", a.healthHandler).Methods("GET")
 	router.HandleFunc("/status", a.statusHandler).Methods("GET")
 	router.HandleFunc("/capture/start", a.startCaptureHandler).Methods("POST")
@@ -383,6 +386,25 @@ func (a *CaptureAgent) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/ws", a.websocketHandler)
 
 	// Weitere Routen hier registrieren...
+}
+
+// corsMiddleware ist ein Middleware für CORS-Unterstützung (Cross-Origin Resource Sharing)
+func (a *CaptureAgent) corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// CORS-Header für alle Anfragen setzen
+		w.Header().Set("Access-Control-Allow-Origin", "*") // Im Produktivbetrieb einschränken
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key")
+
+		// Preflight-Anfragen mit OPTIONS direkt beantworten
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Hauptanfrage verarbeiten
+		next.ServeHTTP(w, r)
+	})
 }
 
 // healthHandler gibt den Gesundheitszustand des Agents zurück
