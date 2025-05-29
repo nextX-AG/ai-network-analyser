@@ -289,7 +289,6 @@ const AgentFilter = ({ onApplyFilter, currentFilter, agentId, onClose }) => {
           />
         </Box>
       ) : (
-        // Standard-Filter UI bleibt unverändert
         <Grid container spacing={2}>
           <Grid item xs={12} sm={3}>
             <FormControl fullWidth>

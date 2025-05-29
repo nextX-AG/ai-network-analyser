@@ -1,5 +1,53 @@
 # TODO Liste
 
+## Aktuelle Probleme in Bearbeitung [🔄]
+
+### Remote-Agents UI Probleme
+- [✓] Filter-Funktion wird nicht im Remote-Agents Tab angezeigt
+  - [✓] Test-Text aus AgentCard.jsx entfernt
+  - [✓] Filter-Button und Panel sind korrekt implementiert
+  - [✓] Filter-Komponente wird beim Klick auf den Button angezeigt
+  - [✓] Filter-State-Management pro Agent ist implementiert
+
+### Packet Capture Bugs
+- [🔄] Packet-Zählung funktioniert nicht korrekt
+  - [ ] WebSocket-Verbindung für Packet-Updates überprüfen
+    - [ ] WebSocket-Handler im Backend analysieren
+    - [ ] WebSocket-Event-Format überprüfen
+    - [ ] WebSocket-Verbindung im Frontend debuggen
+  - [ ] Packet Counter State in RemoteAgentsContainer debuggen
+    - [ ] State-Update-Logik überprüfen
+    - [ ] Event-Handler für Packet-Updates testen
+  - [ ] Backend Packet-Zähler in PcapCapturer analysieren
+    - [ ] Zähler-Logik überprüfen
+    - [ ] Event-Emission testen
+  - [ ] WebSocket Event Handler für Packet-Updates korrigieren
+    - [ ] Event-Format standardisieren
+    - [ ] Error-Handling implementieren
+  - [ ] Packet Counter Reset-Logik bei Capture Start/Stop überarbeiten
+    - [ ] Reset-Event implementieren
+    - [ ] Frontend-State-Reset sicherstellen
+
+### Nächste Schritte
+1. Filter-Integration:
+   - [ ] NetworkFilterPanel.jsx aus networkCapture in remoteAgents/components kopieren
+   - [ ] Komponente für Agent-spezifische Verwendung anpassen
+   - [ ] Filter-State in remoteAgents/hooks implementieren
+   - [ ] Integration in AgentCard.jsx
+
+2. Packet Counter Fix:
+   - [ ] WebSocket-Verbindung in Browser Dev Tools analysieren
+   - [ ] Backend Logs für Packet-Events aktivieren
+   - [ ] Packet Counter State Management überprüfen
+   - [ ] WebSocket Reconnect-Logik testen
+
+## Integration der Filterfunktionalität in Remote-Agents UI
+
+### Vorbereitende Analyse
+- [🔄] Identifizierung der relevanten Komponenten im Remote-Agents-Tab
+- [🔄] Analyse der bestehenden Agent-Karten-Struktur
+- [🔄] Festlegung optimaler Positionierung der Filter-UI innerhalb der Agent-Karte
+
 ## API-Routen
 
 ### Phase 7: API-Überprüfung und Debugging

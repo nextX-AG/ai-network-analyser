@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Alert, CircularProgress } from '@mui/material';
+import { Box, Typography, Alert, CircularProgress, Container } from '@mui/material';
 import AgentCard from '../components/AgentCard';
 import { fetchAgents, startCapture, stopCapture, setAgentInterface } from '../services/agentApi';
 
@@ -189,35 +189,37 @@ const RemoteAgentsContainer = () => {
   };
   
   return (
-    <>
-      {isLoading && agents.length === 0 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <CircularProgress />
-        </Box>
-      )}
-      
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-      
-      {agents.length === 0 && !isLoading && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          Keine Remote-Agenten verfügbar. Bitte stellen Sie sicher, dass Agenten registriert und verbunden sind.
-        </Alert>
-      )}
-      
-      {agents.map((agent) => (
-        <AgentCard
-          key={agent.id}
-          agent={agent}
-          onStartCapture={handleStartCapture}
-          onStopCapture={handleStopCapture}
-          onSetInterface={handleSetInterface}
-        />
-      ))}
-    </>
+    <Container>
+      <Box sx={{ width: '100%', p: 2 }}>
+        {isLoading && agents.length === 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+            <CircularProgress />
+          </Box>
+        )}
+        
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+        
+        {agents.length === 0 && !isLoading && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Keine Remote-Agenten verfügbar. Bitte stellen Sie sicher, dass Agenten registriert und verbunden sind.
+          </Alert>
+        )}
+        
+        {agents.map((agent) => (
+          <AgentCard
+            key={agent.id}
+            agent={agent}
+            onStartCapture={handleStartCapture}
+            onStopCapture={handleStopCapture}
+            onSetInterface={handleSetInterface}
+          />
+        ))}
+      </Box>
+    </Container>
   );
 };
 
