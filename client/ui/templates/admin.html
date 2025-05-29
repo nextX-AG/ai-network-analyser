@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netzwerk-Analyzer Remote Client</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Netzwerk-Analyzer Remote Client</h1>
+        
+        <div class="status-card">
+            <div class="status-item">
+                <span class="status-label">Status:</span>
+                <span id="agent-status">{{.Status}}</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Name:</span>
+                <span>{{.Name}}</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Erfasste Pakete:</span>
+                <span id="packets-captured">{{.PacketsCaptured}}</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Aktive Schnittstelle:</span>
+                <span id="active-interface">{{.Interface}}</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Server-Verbindung:</span>
+                <span id="server-connection">{{if .Connected}}Verbunden{{else}}Nicht verbunden{{end}}</span>
+            </div>
+        </div>
+        
+        <h2>Konfiguration</h2>
+        <form id="config-form" class="config-form">
+            <div class="form-group">
+                <label for="server-url">Hauptserver-URL:</label>
+                <input type="text" id="server-url" name="server_url" value="{{.ServerURL}}" placeholder="http://server-ip:9090">
+            </div>
+            
+            <div class="form-group">
+                <label for="agent-name">Client-Name:</label>
+                <input type="text" id="agent-name" name="name" value="{{.Name}}" placeholder="remote-client-1">
+            </div>
+            
+            <div class="form-group">
+                <label for="interface">Erfassungsschnittstelle:</label>
+                <select id="interface" name="interface">
+                    {{range .Interfaces}}
+                    <option value="{{.Name}}" {{if eq $.Interface .Name}}selected{{end}}>{{.Name}} {{if .IsBridge}}(Bridge){{end}} - {{.IPs}}</option>
+                    {{end}}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="api-key">API-Schlüssel:</label>
+                <input type="text" id="api-key" name="api_key" value="{{.APIKey}}" placeholder="Optional: Authentifizierungsschlüssel">
+            </div>
+            
+            <button type="submit">Konfiguration speichern</button>
+            <div id="success-message" class="success-message">Konfiguration erfolgreich gespeichert!</div>
+            <div id="error-message" class="error-message"></div>
+        </form>
+        
+        <h2>Netzwerkschnittstellen</h2>
+        <div id="interfaces-list">
+            {{range .Interfaces}}
+            <div class="interface-card {{if .IsBridge}}bridge-interface{{end}}">
+                <div class="interface-name">{{.Name}} {{if .IsBridge}}(Bridge){{end}}</div>
+                <div class="interface-details">
+                    <div><strong>MAC:</strong> {{.MAC}}</div>
+                    <div><strong>IP-Adressen:</strong> {{.IPs}}</div>
+                    {{if .IsBridge}}
+                    <div><strong>Bridge-Ports:</strong> {{.BridgePorts}}</div>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+        </div>
+        
+        <h2>Aktionen</h2>
+        <div>
+            <button id="restart-button">Client neustarten</button>
+            <button id="register-button">Bei Server registrieren</button>
+        </div>
+    </div>
+    
+    <script src="/static/js/admin.js"></script>
+</body>
+</html> 
