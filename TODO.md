@@ -1,3 +1,146 @@
+# AI Network Analyser - TODO Liste
+
+## Priorität 1: Projektrestrukturierung
+
+### Phase 1: Vorbereitung
+- [x] Backup des aktuellen Projektstands erstellen
+- [x] Git-Branch für Restrukturierung anlegen
+- [x] Temporäres Arbeitsverzeichnis für Migration erstellen
+
+### Phase 2: Neue Verzeichnisstruktur
+- [x] Agent-Verzeichnisstruktur erstellen
+  - [x] cmd/
+  - [x] configs/
+  - [x] internal/
+  - [x] ui/
+
+- [x] Server-Verzeichnisstruktur erstellen
+  - [x] cmd/
+  - [x] configs/
+  - [x] internal/
+    - [x] ai/
+    - [x] speech/
+    - [x] timeline/
+  - [x] ui/
+
+- [x] Gemeinsame Verzeichnisse erstellen
+  - [x] pkg/
+    - [x] ai/
+    - [x] common/
+    - [x] models/
+    - [x] protocol/
+  - [x] docs/
+  - [x] scripts/
+  - [x] configs/
+
+### Phase 3: Code-Migration
+- [x] Agent-Code migrieren
+  - [x] Hauptanwendung
+  - [x] Interne Pakete
+  - [ ] UI-Komponenten
+
+- [x] Server-Code migrieren
+  - [x] Hauptanwendung
+  - [x] API-Handler
+  - [x] UI-Komponenten
+  - [ ] KI-Module
+  - [ ] Sprachverarbeitung
+  - [ ] Timeline-Komponenten
+
+- [x] Gemeinsamen Code migrieren
+  - [x] Modelle (packet.go)
+  - [x] Protokolle (dhcp_types.go)
+  - [x] Utilities (common.go)
+  - [ ] KI-Utilities
+
+### Phase 4: KI-Integration
+- [ ] LLM-Integration
+  - [ ] Lokales Modell einbinden
+  - [ ] OpenAI API anbinden
+  - [ ] Modell-Verwaltung implementieren
+
+- [ ] KI-Analysemodule
+  - [ ] Paketanalyse-Modelle entwickeln
+  - [ ] Anomalie-Erkennung implementieren
+  - [ ] Musteranalyse integrieren
+
+- [ ] KI-UI-Komponenten
+  - [ ] Analyse-Dashboard erstellen
+  - [ ] Modell-Verwaltung UI
+  - [ ] Ergebnis-Visualisierung
+
+### Phase 5: Sprachverarbeitung
+- [ ] Whisper Integration
+  - [ ] Whisper.cpp einbinden
+  - [ ] Modell-Management implementieren
+  - [ ] Performance-Optimierung
+
+- [ ] Spracherkennungs-UI
+  - [ ] Aufnahme-Interface
+  - [ ] Transkriptions-Anzeige
+  - [ ] Sprachsteuerung
+
+- [ ] API-Integration
+  - [ ] REST-Endpunkte
+  - [ ] WebSocket-Streaming
+  - [ ] Fehlerbehandlung
+
+### Phase 6: Anpassungen
+- [ ] Import-Pfade aktualisieren
+- [ ] Build-Skripte anpassen
+- [ ] Tests aktualisieren
+- [ ] Dokumentation aktualisieren
+
+### Phase 7: Validierung
+- [ ] Builds testen
+- [ ] Unit-Tests durchführen
+- [ ] Integration testen
+- [ ] UI-Tests durchführen
+- [ ] KI-Modelle validieren
+- [ ] Spracherkennung testen
+
+### Phase 8: Cleanup
+- [x] Alte Verzeichnisse entfernen
+  - [x] cmd/ entfernt
+  - [x] internal/ entfernt
+  - [x] bin/ in neue Struktur integriert
+  - [x] data/ in neue Struktur integriert
+  - [x] pcaps/ in neue Struktur integriert
+  - [x] web/ in neue Struktur integriert
+- [ ] Nicht benötigte Dateien löschen
+- [ ] Code-Review durchführen
+- [ ] Final Testing
+
+## Priorität 2: Feature-Entwicklung
+
+### KI-Features
+- [ ] Implementierung der Paketanalyse-KI
+- [ ] Integration der Anomalie-Erkennung
+- [ ] Entwicklung der Musteranalyse
+- [ ] Implementierung der KI-gestützten Filtervorschläge
+
+### Sprachverarbeitung
+- [ ] Implementierung der Sprachnotizen
+- [ ] Integration der Sprachsteuerung
+- [ ] Entwicklung der Sprachanalyse
+- [ ] Implementierung der Sprachbasierten Suche
+
+### Timeline-Features
+- [ ] Implementierung der KI-gestützten Ereigniserkennung
+- [ ] Integration der Sprachnotizen in Timeline
+- [ ] Entwicklung der automatischen Ereignisklassifizierung
+
+## Priorität 3: Optimierungen
+- [ ] Performance-Optimierung der KI-Modelle
+- [ ] Optimierung der Spracherkennung
+- [ ] Verbesserung der Echtzeit-Analyse
+- [ ] Optimierung der Datenspeicherung
+
+## Abgeschlossene Aufgaben
+- [x] Initiale Projektstruktur definiert
+- [x] Architektur-Dokumentation erstellt
+- [x] Restrukturierungsplan erstellt
+
 # KI-Netzwerk-Analyzer TODO List
 
 This document provides a high-level overview of the current tasks for the KI-Netzwerk-Analyzer project. For more detailed tasks and progress tracking, please see the [docs/TODO.md](docs/TODO.md).
