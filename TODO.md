@@ -392,3 +392,14 @@ This document provides a high-level overview of the current tasks for the KI-Net
 - [ ] Sicherstellen, dass die neue Struktur im Entwicklungsworkflow funktioniert
 - [ ] Bereitstellen der aktualisierten Anwendung in der Testumgebung
 - [ ] Validieren der End-to-End-Funktionalität nach dem Refactoring 
+
+### Phase 1: Client-UI-Struktur vervollständigen
+- [x] HTML-Templates aus Go-Code in `/client/ui/templates` extrahieren
+- [x] CSS und JavaScript in `/client/ui/static` organisieren
+- [x] Statische Assets in `/client/ui/public` verschieben
+- [x] UI-Logik in `/client/internal/webui` überarbeiten
+
+### Phase 5: Timeline-Feature
+- [ ] Timeline-Komponenten entwickeln
+- [ ] UI-Integration
+- [ ] Event-Synchronisation 
