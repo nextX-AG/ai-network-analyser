@@ -86,16 +86,16 @@
   - [ ] Fehlerbehandlung
 
 ### Phase 6: Anpassungen
-- [ ] Import-Pfade aktualisieren
-- [ ] Build-Skripte anpassen
+- [x] Import-Pfade aktualisieren
+- [x] Build-Skripte anpassen
 - [ ] Tests aktualisieren
 - [ ] Dokumentation aktualisieren
 
 ### Phase 7: Validierung
-- [ ] Builds testen
+- [x] Builds testen
 - [ ] Unit-Tests durchführen
 - [ ] Integration testen
-- [ ] UI-Tests durchführen
+- [x] UI-Tests durchführen
 - [ ] KI-Modelle validieren
 - [ ] Spracherkennung testen
 

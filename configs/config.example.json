@@ -4,10 +4,10 @@
     "port": 9090,
     "enable_websocket": true,
     "enable_cors": true,
-    "static_dir": "./web"
+    "static_dir": "./server/ui"
   },
   "capture": {
-    "pcap_dir": "./pcaps",
+    "pcap_dir": "./server/pcaps",
     "interface": "",
     "promisc_mode": true,
     "snap_len": 65535,
@@ -17,7 +17,7 @@
   },
   "storage": {
     "type": "sqlite",
-    "path": "./data/packets.db",
+    "path": "./server/data/packets.db",
     "auto_vacuum": true,
     "max_packets": 1000000
   },
@@ -33,7 +33,7 @@
   "speech": {
     "enabled": false,
     "engine": "whisper_local",
-    "model_path": "./models/whisper.bin",
+    "model_path": "./server/models/whisper.bin",
     "language": "auto",
     "api_key": ""
   },
