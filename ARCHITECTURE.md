@@ -3,7 +3,7 @@
 ## Überblick
 
 Der AI Network Analyser ist eine verteilte Anwendung zur Netzwerkanalyse, bestehend aus mehreren Hauptkomponenten:
-- Agent: Für die Paketerfassung und lokale Analyse
+- Client: Für die Paketerfassung und lokale Analyse
 - Server: Für die zentrale Verwaltung und Visualisierung
 - AI-Module: Für die intelligente Analyse von Netzwerkdaten
 - Speech-Module: Für die Spracherkennung und -verarbeitung
@@ -12,13 +12,13 @@ Der AI Network Analyser ist eine verteilte Anwendung zur Netzwerkanalyse, besteh
 
 ```
 ai-network-analyser/
-├── agent/                    # Remote-Agent Komponente
+├── client/                   # Client Komponente
 │   ├── cmd/                  # Hauptanwendung
-│   ├── configs/              # Agent-Konfigurationen
+│   ├── configs/              # Client-Konfigurationen
 │   ├── internal/             # Private Pakete
 │   │   ├── capture/         # Paketerfassung
-│   │   ├── service/         # Agent-Dienste
-│   │   └── webui/          # Agent-UI Backend
+│   │   ├── service/         # Client-Dienste
+│   │   └── webui/          # Client-UI Backend
 │   └── ui/                  # Frontend
 │       ├── public/          # Statische Dateien
 │       ├── templates/       # HTML-Templates
@@ -79,12 +79,12 @@ ai-network-analyser/
 ## Architekturprinzipien
 
 1. **Klare Komponentenaufteilung**
-   - Strikte Trennung zwischen Agent und Server
+   - Strikte Trennung zwischen Client und Server
    - Modulare KI- und Sprachverarbeitungskomponenten
    - Jede Komponente ist eigenständig lauffähig
 
 2. **Konsistente UI-Struktur**
-   - Agent: Leichtgewichtige Template-basierte UI
+   - Client: Leichtgewichtige Template-basierte UI
    - Server: React-basierte Hauptanwendung mit Feature-Modulen
    - Integrierte KI- und Sprachverarbeitungs-UI
 
@@ -130,7 +130,7 @@ ai-network-analyser/
 ## Build und Deployment
 
 1. **Build-Prozess**
-   - Separate Builds für Agent und Server
+   - Separate Builds für Client und Server
    - Frontend-Builds in jeweiligen UI-Verzeichnissen
    - KI-Modell-Management und Versionierung
    - Sprachmodell-Integration

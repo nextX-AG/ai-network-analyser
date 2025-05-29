@@ -8,7 +8,7 @@
 - [x] Temporäres Arbeitsverzeichnis für Migration erstellen
 
 ### Phase 2: Neue Verzeichnisstruktur
-- [x] Agent-Verzeichnisstruktur erstellen
+- [x] Client-Verzeichnisstruktur erstellen (vormals Agent)
   - [x] cmd/
   - [x] configs/
   - [x] internal/
@@ -34,7 +34,7 @@
   - [x] configs/
 
 ### Phase 3: Code-Migration
-- [x] Agent-Code migrieren
+- [x] Client-Code migrieren (vormals Agent)
   - [x] Hauptanwendung
   - [x] Interne Pakete
   - [ ] UI-Komponenten
