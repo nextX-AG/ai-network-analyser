@@ -91,25 +91,31 @@
 - [ ] Tests aktualisieren
 - [ ] Dokumentation aktualisieren
 
-### Phase 7: Validierung
+### Phase 7: API-Überprüfung und Debugging
+- [ ] API-Routen im Code überprüfen
+  - [ ] Server-Routen-Registrierung analysieren
+  - [ ] API-Handler-Implementierung prüfen
+  - [ ] Middleware-Konfiguration überprüfen
+- [ ] Server-Logs auf Fehler untersuchen
+  - [ ] Start-up Logs analysieren
+  - [ ] Runtime-Fehler identifizieren
+  - [ ] CORS und Routing-Probleme prüfen
+- [ ] API-Dokumentation überprüfen
+  - [ ] Endpunkt-Definitionen validieren
+  - [ ] Route-Präfixe verifizieren
+  - [ ] API-Versioning prüfen
+- [ ] API-Tests durchführen
+  - [ ] Basis-Endpunkte testen (/api/, /api/status)
+  - [ ] Client-spezifische Endpunkte testen
+  - [ ] WebSocket-Verbindungen testen
+
+### Phase 8: Validierung
 - [x] Builds testen
 - [ ] Unit-Tests durchführen
 - [ ] Integration testen
 - [x] UI-Tests durchführen
 - [ ] KI-Modelle validieren
 - [ ] Spracherkennung testen
-
-### Phase 8: Cleanup
-- [x] Alte Verzeichnisse entfernen
-  - [x] cmd/ entfernt
-  - [x] internal/ entfernt
-  - [x] bin/ in neue Struktur integriert
-  - [x] data/ in neue Struktur integriert
-  - [x] pcaps/ in neue Struktur integriert
-  - [x] web/ in neue Struktur integriert
-- [ ] Nicht benötigte Dateien löschen
-- [ ] Code-Review durchführen
-- [ ] Final Testing
 
 ### Phase 2: Dokumentation vervollständigen
 - [x] README.md für Client-Komponente erstellen

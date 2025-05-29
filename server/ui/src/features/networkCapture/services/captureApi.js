@@ -2,23 +2,18 @@
  * Dienste für die Kommunikation mit der Netzwerkerfassung-API
  */
 
+import api from '../../../services/api';
 import { convertToBpfSyntax } from '../../../shared/utils/filterUtils';
 
 /**
  * Holt den Status und die Interfaces vom Agenten
- * @param {string} agentUrl - URL des Agenten
+ * @param {string} agentId - ID des Agenten
  * @returns {Promise<Object>} Status und Schnittstellen des Agenten
  */
-export const fetchAgentStatus = async (agentUrl) => {
+export const fetchAgentStatus = async (agentId) => {
   try {
-    const response = await fetch(`${agentUrl}/status`);
-    const data = await response.json();
-    
-    if (data.success) {
-      return data.data;
-    } else {
-      throw new Error(data.error || 'Fehler beim Laden des Agentenstatus');
-    }
+    const response = await api.get(`/agents/${agentId}/status`);
+    return response;
   } catch (error) {
     console.error('Fehler beim Laden des Agentenstatus:', error);
     throw error;
@@ -27,84 +22,59 @@ export const fetchAgentStatus = async (agentUrl) => {
 
 /**
  * Startet die Paketerfassung
- * @param {string} agentUrl - URL des Agenten
+ * @param {string} agentId - ID des Agenten
  * @param {string} interfaceName - Name der Netzwerkschnittstelle
  * @param {string|Array} filter - Filter (String oder Array von Filter-Objekten)
  * @returns {Promise<Object>} Ergebnis der Operation
  */
-export const startCapture = async (agentUrl, interfaceName, filter) => {
+export const startCapture = async (agentId, interfaceName, filter) => {
   try {
-    // Bereite Anfrage vor
     const requestData = {
       interface: interfaceName
     };
     
-    // Füge Filter hinzu, wenn vorhanden
     if (filter) {
       if (typeof filter === 'string') {
         requestData.filter = filter;
       } else if (Array.isArray(filter) && filter.length > 0) {
-        // Konvertiere komplexe Filter in BPF-Syntax
-        const bpfFilter = convertToBpfSyntax(filter);
-        requestData.filter = bpfFilter;
+        requestData.filter = convertToBpfSyntax(filter);
       }
     }
     
-    const response = await fetch(`${agentUrl}/capture/start`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestData),
-    });
-    
-    return await response.json();
+    return await api.post(`/agents/${agentId}/capture/start`, requestData);
   } catch (error) {
     console.error('Fehler beim Starten der Erfassung:', error);
-    return { success: false, error: 'Verbindung zum Agenten fehlgeschlagen' };
+    throw error;
   }
 };
 
 /**
  * Stoppt die Paketerfassung
- * @param {string} agentUrl - URL des Agenten
+ * @param {string} agentId - ID des Agenten
  * @returns {Promise<Object>} Ergebnis der Operation
  */
-export const stopCapture = async (agentUrl) => {
+export const stopCapture = async (agentId) => {
   try {
-    const response = await fetch(`${agentUrl}/capture/stop`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    return await response.json();
+    return await api.post(`/agents/${agentId}/capture/stop`);
   } catch (error) {
     console.error('Fehler beim Stoppen der Erfassung:', error);
-    return { success: false, error: 'Verbindung zum Agenten fehlgeschlagen' };
+    throw error;
   }
 };
 
 /**
  * Setzt die Netzwerkschnittstelle
- * @param {string} agentUrl - URL des Agenten
+ * @param {string} agentId - ID des Agenten
  * @param {string} interfaceName - Name der Netzwerkschnittstelle
  * @returns {Promise<Object>} Ergebnis der Operation
  */
-export const setInterface = async (agentUrl, interfaceName) => {
+export const setInterface = async (agentId, interfaceName) => {
   try {
-    const response = await fetch(`${agentUrl}/capture/set-interface`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ interface: interfaceName }),
+    return await api.post(`/agents/${agentId}/capture/set-interface`, {
+      interface: interfaceName
     });
-    
-    return await response.json();
   } catch (error) {
     console.error('Fehler beim Setzen der Schnittstelle:', error);
-    return { success: false, error: 'Verbindung zum Agenten fehlgeschlagen' };
+    throw error;
   }
 }; 
