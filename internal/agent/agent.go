@@ -32,6 +32,7 @@ type AgentStatus struct {
 	PacketsCaptured int       `json:"packets_captured"`
 	Interface       string    `json:"interface"`
 	Error           string    `json:"error,omitempty"`
+	ActiveFilter    string    `json:"active_filter,omitempty"`
 }
 
 // AgentInfo enthält die Registrierungsinformationen für den Server
@@ -464,6 +465,16 @@ func (a *CaptureAgent) startCaptureHandler(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
+	// BPF-Filter setzen, wenn angegeben
+	if request.Filter != "" {
+		// Filter in Konfiguration setzen
+		a.config.Capture.Filter = request.Filter
+		log.Printf("BPF-Filter für Capture gesetzt: %s", request.Filter)
+	} else {
+		// Filter zurücksetzen, wenn keiner angegeben wurde
+		a.config.Capture.Filter = ""
+	}
+
 	// Capture öffnen
 	if err := a.capturer.OpenLiveCapture(captureInterface); err != nil {
 		respondWithError(w, http.StatusInternalServerError,
@@ -485,15 +496,25 @@ func (a *CaptureAgent) startCaptureHandler(w http.ResponseWriter, r *http.Reques
 	a.status.Interface = captureInterface
 	a.status.PacketsCaptured = 0
 	a.status.Error = ""
+	a.status.ActiveFilter = request.Filter
 	a.statusMutex.Unlock()
 
 	// Paketverarbeitung in Goroutine starten
 	go a.processPackets(packetChan, errChan)
 
 	// Erfolgreiche Antwort senden
+	responseMessage := fmt.Sprintf("Capture started on interface %s", captureInterface)
+	if request.Filter != "" {
+		responseMessage += fmt.Sprintf(" with filter: %s", request.Filter)
+	}
+
 	response := APIResponse{
 		Success: true,
-		Message: fmt.Sprintf("Capture started on interface %s", captureInterface),
+		Message: responseMessage,
+		Data: map[string]interface{}{
+			"interface": captureInterface,
+			"filter":    request.Filter,
+		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -518,6 +539,7 @@ func (a *CaptureAgent) stopCaptureHandler(w http.ResponseWriter, r *http.Request
 	// Status aktualisieren
 	a.statusMutex.Lock()
 	a.status.Status = "idle"
+	a.status.ActiveFilter = ""
 	a.statusMutex.Unlock()
 
 	// Erfolgreiche Antwort senden
@@ -585,12 +607,18 @@ func (a *CaptureAgent) heartbeatRoutine() {
 
 		// Heartbeat an den Hauptserver senden, wenn eine Server-URL konfiguriert ist
 		if a.config.Agent.ServerURL != "" {
+			// Aktiver Filter für Heartbeat
+			a.statusMutex.RLock()
+			activeFilter := a.status.ActiveFilter
+			a.statusMutex.RUnlock()
+
 			// Heartbeat-Daten vorbereiten
 			heartbeatData := map[string]interface{}{
 				"name":             a.config.Agent.Name,
 				"status":           currentStatus,
 				"packets_captured": packetsCaptured,
 				"interface":        a.config.Agent.Interface,
+				"active_filter":    activeFilter,
 			}
 
 			jsonData, err := json.Marshal(heartbeatData)

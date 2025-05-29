@@ -195,12 +195,15 @@ Die Remote-Capture-Funktionalität basiert auf einem Agent-Server-Modell:
    - Verwaltet Verbindungen zu mehreren Remote-Agents
    - Aggregiert und verarbeitet Daten von allen Erfassungspunkten
    - Bietet einheitliche UI für die Verwaltung aller Erfassungsgeräte
+   - **Zentralisierte Schnittstellenauswahl:** Der Server kann remote die aktive Netzwerkschnittstelle auf jedem Agent konfigurieren
+   - **Dynamisches Interface-Management:** Detaillierte Informationen über alle verfügbaren Schnittstellen werden vom Agenten an den Server übermittelt
 
 3. **Kommunikationsprotokoll**
    - REST-API für Konfiguration, Start/Stop und Status
    - WebSocket für effizientes Echtzeit-Streaming von Paketdaten
    - Optimierte Datenübertragung (Serialisierung, Kompression)
    - Authentifizierung über API-Keys
+   - **Verbesserte Netzwerkerkennung:** Agenten registrieren sich mit ihrer tatsächlichen routbaren IP-Adresse für zuverlässige Verbindungen
 
 4. **Deployment-Optionen**
    - Standalone-Binary für Edge-Geräte (Go's Cross-Compilation)
@@ -215,10 +218,22 @@ Der Remote-Agent verfügt über ein eingebautes Web-Interface, das folgende Funk
 - Netzwerkschnittstellen-Übersicht mit Erkennung von Bridge-Interfaces
 - Aktions-Buttons (Agent-Neustart, Server-Registrierung)
 
+### Serverseitige Kontrolle der Netzwerkschnittstellen
+
+Ein zentrales Architekturmerkmal ist die Fähigkeit, vom Server aus die aktive Netzwerkschnittstelle auf Remote-Agents zu konfigurieren:
+
+- **Zentralisierte Steuerung:** Administratoren können vom Server aus die optimale Netzwerkschnittstelle für jeden Agent auswählen, ohne direkten Zugriff auf das Remote-Gerät zu benötigen.
+- **Detaillierte Schnittstelleninformation:** Agenten übermitteln umfassende Informationen zu jeder verfügbaren Schnittstelle (MAC-Adressen, IP-Adressen, Bridge-Status, MTU, etc.)
+- **Persistente Konfiguration:** Die gewählte Schnittstelle wird auf dem Agent gespeichert und bleibt auch nach Neustarts erhalten.
+- **API-Endpunkte:**
+  - Server: `/api/agents/set-interface` für das Setzen der Schnittstelle auf einem Remote-Agent
+  - Agent: `/capture/set-interface` für die lokale Implementierung der Schnittstellenänderung
+
 ### Automatische Erkennung und Registrierung
 
 Der Agent verfügt über eine automatische Registrierungsfunktion:
 - Beim Start versucht der Agent, sich automatisch beim konfigurierten Server zu registrieren
+- Intelligente IP-Adresserkennung ermittelt die tatsächliche routbare IP-Adresse für die Registrierung
 - Erfasst und übermittelt Informationen zu allen verfügbaren Netzwerkschnittstellen
 - Fallback auf manuelle Registrierung via Web-Interface
 
@@ -277,3 +292,116 @@ Die API ist RESTful mit den folgenden Hauptendpunkten:
 - Zugriffssteuerung für sensible Operationen
 - Validierung aller Eingaben
 - Sichere WebSocket-Kommunikation
+
+## Frontend-Architektur
+
+Die Webanwendung folgt einer strukturierten, komponentenbasierten Architektur mit React, die klare Trennung von Zuständigkeiten und eine modulare Bauweise ermöglicht.
+
+### Verzeichnisstruktur
+
+```
+web/
+│
+├── public/              # Statische Assets und HTML-Template
+│
+└── src/                 # Quellcode der Webanwendung
+    ├── assets/          # Bilder, Fonts und andere statische Ressourcen
+    │
+    ├── components/      # Wiederverwendbare UI-Komponenten
+    │   ├── ai/          # KI-bezogene Komponenten
+    │   ├── common/      # Allgemeine UI-Elemente
+    │   ├── network/     # Netzwerkbezogene Komponenten
+    │   │   ├── Filter/  # Filterfunktionen für Netzwerkdaten
+    │   │   │   ├── NetworkFilterPanel.jsx  # Filteroberfläche
+    │   │   │   ├── filterConstants.js      # Konstanten für Filter
+    │   │   │   └── index.js                # Export-Datei
+    │   │   │
+    │   │   ├── AgentCardWithFilter.jsx     # Agentenkarte mit Filter-Integration
+    │   │   ├── RemoteAgentsContainer.jsx   # Container für Remote-Agents
+    │   │   ├── NetworkCapturePanel.jsx     # Panel für Netzwerkerfassung
+    │   │   └── index.js                   # Export-Datei
+    │   │
+    │   ├── speech/      # Sprachverarbeitungskomponenten
+    │   └── timeline/    # Zeitleisten-Visualisierung
+    │
+    ├── context/         # React Context für globalen Zustandsmanagement
+    ├── hooks/           # Benutzerdefinierte React Hooks
+    ├── pages/           # Seitenkomponenten/Routen
+    ├── services/        # API-Dienste und externe Kommunikation
+    ├── types/           # TypeScript-Typendefinitionen
+    └── utils/           # Hilfsfunktionen und gemeinsam genutzte Logik
+```
+
+### Hauptkomponenten
+
+#### Remote-Agents
+
+Die Remote-Agents-Verwaltung ist über mehrere Komponenten verteilt:
+
+1. **RemoteAgentsContainer**
+   - Hauptcontainer für die Remote-Agents-Seite
+   - Verwaltet den Zustand aller Agenten
+   - Führt API-Aufrufe durch (Laden, Aktualisieren, Starten/Stoppen der Erfassung)
+   - Kümmert sich um Fehlerbehandlung und Statusaktualisierungen
+
+2. **AgentCardWithFilter**
+   - Darstellung einzelner Agenten als Karten
+   - Integriert die Filterfunktionalität direkt in die Agent-UI
+   - Zeigt Agent-Status, Interface-Details und Statistiken an
+   - Ermöglicht erweiterte Aktionen (Filtern, Start/Stop, Interface-Auswahl)
+
+3. **NetworkFilterPanel**
+   - Filteroberfläche für Netzwerkdaten
+   - Ermöglicht IP-, Port-, Protokoll- und MAC-Adressfilterung
+   - Unterstützt sowohl einfache als auch komplexe Filter (BPF-Syntax)
+   - Bietet Speichern/Laden von Filtereinstellungen
+
+#### Datenfluss
+
+```
+User-Interaktion → AgentCardWithFilter → NetworkFilterPanel
+                 ↓
+         RemoteAgentsContainer
+                 ↓
+   API-Aufrufe (Fetch, WebSockets) ↔ Go-Backend
+```
+
+### API-Integration
+
+Die Frontend-Komponenten kommunizieren mit dem Backend über:
+
+1. **REST-API**
+   - `/api/agents` - Liste der Agenten abrufen
+   - `/api/agents/capture/start` - Erfassung starten (mit Filteroption)
+   - `/api/agents/capture/stop` - Erfassung stoppen
+   - `/api/agents/set-interface` - Interface eines Agenten setzen
+
+2. **WebSockets**
+   - Echtzeit-Updates von Paketdaten
+   - Statusänderungen der Agenten
+
+### Filterfunktionen
+
+Die Filterfunktionalität ist ein zentrales Element und umfasst:
+
+1. **Einfache Filter**
+   - IP-Adresse (Quelle/Ziel)
+   - Ports (Quelle/Ziel)
+   - Protokolle (TCP, UDP, ICMP, etc.)
+   - MAC-Adressen (Quelle/Ziel)
+
+2. **Fortgeschrittene Filter**
+   - Direkte BPF-Syntax-Eingabe
+   - Kombination mehrerer Filter mit logischen Operatoren (UND/ODER)
+
+3. **Filter-Verwaltung**
+   - Speichern und Laden von Filterkonfigurationen
+   - Pro-Agent-Filtereinstellungen
+
+### Styling und UI-Framework
+
+Das Frontend verwendet Material-UI (MUI) für ein konsistentes Design und optimale Benutzerfreundlichkeit:
+- Responsive Layouts mit Grid und Box-Komponenten
+- Karten für Agent-Darstellung
+- Akkordions für ausklappbare Bereiche
+- Formulare für Filter-Eingaben

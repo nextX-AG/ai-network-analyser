@@ -126,17 +126,17 @@ This document provides a high-level overview of the current tasks for the KI-Net
 - [ ] Document filter integration in agent management UI
 
 ### Integration Plan
-- [ ] Refactor NetworkFilterPanel to be agent-specific
-- [ ] Add filter section to each agent card in Remote-Agents UI
-- [ ] Ensure filter state is saved per agent
-- [ ] Implement filter synchronization between UI and agent status 
+- [🔄] Refactor NetworkFilterPanel to be agent-specific
+- [🔄] Add filter section to each agent card in Remote-Agents UI
+- [🔄] Ensure filter state is saved per agent
+- [🔄] Implement filter synchronization between UI and agent status 
 
 ## Integration der Filterfunktionalität in Remote-Agents UI
 
 ### Vorbereitende Analyse
-- [ ] Identifizierung der relevanten Komponenten im Remote-Agents-Tab
-- [ ] Analyse der bestehenden Agent-Karten-Struktur
-- [ ] Festlegung optimaler Positionierung der Filter-UI innerhalb der Agent-Karte
+- [🔄] Identifizierung der relevanten Komponenten im Remote-Agents-Tab
+- [🔄] Analyse der bestehenden Agent-Karten-Struktur
+- [🔄] Festlegung optimaler Positionierung der Filter-UI innerhalb der Agent-Karte
 
 ### Refactoring der Filterkomponente
 - [ ] Anpassung der NetworkFilterPanel-Komponente für agentenspezifische Verwendung

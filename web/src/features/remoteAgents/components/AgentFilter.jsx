@@ -39,7 +39,7 @@ import { convertToBpfSyntax } from '../../../shared/utils/filterUtils';
  * AgentFilter - Filterpanel für einen spezifischen Agenten
  * Basiert auf der NetworkFilterPanel-Komponente
  */
-const AgentFilter = ({ onApplyFilter, currentFilter, agentId }) => {
+const AgentFilter = ({ onApplyFilter, currentFilter, agentId, onClose }) => {
   const [expanded, setExpanded] = useState(false);
   const [activeFilters, setActiveFilters] = useState([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -184,6 +184,8 @@ const AgentFilter = ({ onApplyFilter, currentFilter, agentId }) => {
     } else {
       onApplyFilter(activeFilters);
     }
+    // Schließe das Panel nach dem Anwenden des Filters
+    onClose?.();
   };
 
   const handleSaveFilter = () => {
@@ -227,325 +229,323 @@ const AgentFilter = ({ onApplyFilter, currentFilter, agentId }) => {
   };
 
   return (
-    <Card variant="outlined">
-      <CardContent>
-        <Typography variant="h6" sx={{ mb: 2 }}>
+    <Box>
+      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+        <Typography variant="subtitle1" sx={{ flex: 1 }}>
           <FilterAltIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-          Filter für {agentId}
+          Paketfilter
         </Typography>
-        
+        <Button
+          size="small"
+          variant={!showAdvanced ? "contained" : "outlined"}
+          onClick={() => setShowAdvanced(false)}
+        >
+          Standard
+        </Button>
+        <Button
+          size="small"
+          variant={showAdvanced ? "contained" : "outlined"}
+          onClick={() => setShowAdvanced(true)}
+        >
+          BPF
+        </Button>
+      </Stack>
+
+      {/* Gespeicherte Filter als horizontale Liste */}
+      {savedFilters.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="caption" display="block" gutterBottom>
+            Gespeicherte Filter
+          </Typography>
+          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+            {savedFilters.map((filter) => (
+              <Chip
+                key={filter.id}
+                label={filter.name}
+                onClick={() => handleLoadFilter(filter)}
+                onDelete={() => handleDeleteSavedFilter(filter.id)}
+                size="small"
+                color="secondary"
+                variant="outlined"
+              />
+            ))}
+          </Stack>
+        </Box>
+      )}
+
+      {/* Fortgeschrittener BPF-Filter */}
+      {showAdvanced ? (
+        <Box>
+          <TextField
+            fullWidth
+            label="BPF-Syntax Filter"
+            placeholder="z.B. tcp port 80 or udp port 53"
+            value={manualBpfFilter}
+            onChange={(e) => setManualBpfFilter(e.target.value)}
+            multiline
+            rows={2}
+            variant="outlined"
+            size="small"
+          />
+        </Box>
+      ) : (
+        // Standard-Filter UI bleibt unverändert
         <Grid container spacing={2}>
-          {/* Umschalter zwischen einfachen und fortgeschrittenen Filtern */}
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={3}>
             <FormControl fullWidth>
-              <Stack direction="row" spacing={2} justifyContent="space-between">
-                <Button 
-                  variant={!showAdvanced ? "contained" : "outlined"} 
-                  onClick={() => setShowAdvanced(false)}
-                >
-                  Einfacher Filter
-                </Button>
-                <Button 
-                  variant={showAdvanced ? "contained" : "outlined"} 
-                  onClick={() => setShowAdvanced(true)}
-                >
-                  BPF-Syntax (Fortgeschritten)
-                </Button>
-              </Stack>
+              <InputLabel>Filtertyp</InputLabel>
+              <Select
+                value={filterType}
+                onChange={handleFilterTypeChange}
+                label="Filtertyp"
+              >
+                <MenuItem value="ip">IP-Adresse</MenuItem>
+                <MenuItem value="port">Port</MenuItem>
+                <MenuItem value="protocol">Protokoll</MenuItem>
+                <MenuItem value="mac">MAC-Adresse</MenuItem>
+              </Select>
             </FormControl>
           </Grid>
 
-          {/* Gespeicherte Filter */}
-          {savedFilters.length > 0 && (
-            <Grid item xs={12}>
-              <Typography variant="subtitle1">Gespeicherte Filter</Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-                {savedFilters.map((filter) => (
-                  <Chip
-                    key={filter.id}
-                    label={filter.name}
-                    onClick={() => handleLoadFilter(filter)}
-                    onDelete={() => handleDeleteSavedFilter(filter.id)}
-                    color="secondary"
-                    deleteIcon={<DeleteIcon />}
-                  />
-                ))}
-              </Box>
-            </Grid>
-          )}
-
-          {showAdvanced ? (
-            // Fortgeschrittener BPF-Filter
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="BPF Filter Syntax"
-                placeholder="z.B. tcp port 80 or udp port 53"
-                value={manualBpfFilter}
-                onChange={(e) => setManualBpfFilter(e.target.value)}
-                helperText="Berkeley Packet Filter Syntax"
-                variant="outlined"
-              />
-            </Grid>
-          ) : (
-            // Einfache Filter-Oberfläche
+          {/* Dynamische Filter-Optionen basierend auf dem ausgewählten Filtertyp */}
+          {filterType === 'ip' && (
             <>
               <Grid item xs={12} sm={3}>
                 <FormControl fullWidth>
-                  <InputLabel>Filtertyp</InputLabel>
+                  <InputLabel>Typ</InputLabel>
                   <Select
-                    value={filterType}
-                    onChange={handleFilterTypeChange}
-                    label="Filtertyp"
+                    value={ipFilter.type}
+                    onChange={(e) => setIpFilter({...ipFilter, type: e.target.value})}
+                    label="Typ"
                   >
-                    <MenuItem value="ip">IP-Adresse</MenuItem>
-                    <MenuItem value="port">Port</MenuItem>
-                    <MenuItem value="protocol">Protokoll</MenuItem>
-                    <MenuItem value="mac">MAC-Adresse</MenuItem>
+                    {IP_FILTER_TYPES.map(type => (
+                      <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
-
-              {/* Dynamische Filter-Optionen basierend auf dem ausgewählten Filtertyp */}
-              {filterType === 'ip' && (
-                <>
-                  <Grid item xs={12} sm={3}>
-                    <FormControl fullWidth>
-                      <InputLabel>Typ</InputLabel>
-                      <Select
-                        value={ipFilter.type}
-                        onChange={(e) => setIpFilter({...ipFilter, type: e.target.value})}
-                        label="Typ"
-                      >
-                        {IP_FILTER_TYPES.map(type => (
-                          <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      label="IP-Adresse"
-                      placeholder="z.B. 192.168.1.1"
-                      value={ipFilter.value}
-                      onChange={(e) => setIpFilter({...ipFilter, value: e.target.value})}
-                    />
-                  </Grid>
-                </>
-              )}
-
-              {filterType === 'port' && (
-                <>
-                  <Grid item xs={12} sm={3}>
-                    <FormControl fullWidth>
-                      <InputLabel>Typ</InputLabel>
-                      <Select
-                        value={portFilter.type}
-                        onChange={(e) => setPortFilter({...portFilter, type: e.target.value})}
-                        label="Typ"
-                      >
-                        {PORT_FILTER_TYPES.map(type => (
-                          <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <FormControl fullWidth>
-                      <InputLabel>Port</InputLabel>
-                      <Select
-                        value={portFilter.value}
-                        onChange={(e) => setPortFilter({...portFilter, value: e.target.value})}
-                        label="Port"
-                      >
-                        {COMMON_PORTS.map(port => (
-                          <MenuItem key={port.value} value={port.value}>
-                            {port.label} ({port.value})
-                          </MenuItem>
-                        ))}
-                        <MenuItem value="custom">
-                          <em>Benutzerdefiniert</em>
-                        </MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  {portFilter.value === 'custom' && (
-                    <Grid item xs={12} sm={2}>
-                      <TextField
-                        fullWidth
-                        label="Port"
-                        type="number"
-                        placeholder="z.B. 8080"
-                        onChange={(e) => setPortFilter({...portFilter, value: e.target.value})}
-                      />
-                    </Grid>
-                  )}
-                </>
-              )}
-
-              {filterType === 'protocol' && (
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Protokoll</InputLabel>
-                    <Select
-                      value={protocolFilter.type}
-                      onChange={(e) => setProtocolFilter({...protocolFilter, type: e.target.value})}
-                      label="Protokoll"
-                    >
-                      {PROTOCOL_FILTER_TYPES.map(type => (
-                        <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-              )}
-
-              {filterType === 'mac' && (
-                <>
-                  <Grid item xs={12} sm={3}>
-                    <FormControl fullWidth>
-                      <InputLabel>Typ</InputLabel>
-                      <Select
-                        value={macFilter.type}
-                        onChange={(e) => setMacFilter({...macFilter, type: e.target.value})}
-                        label="Typ"
-                      >
-                        {MAC_FILTER_TYPES.map(type => (
-                          <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      label="MAC-Adresse"
-                      placeholder="z.B. 00:11:22:33:44:55"
-                      value={macFilter.value}
-                      onChange={(e) => setMacFilter({...macFilter, value: e.target.value})}
-                    />
-                  </Grid>
-                </>
-              )}
-
-              <Grid item xs={12} sm={2}>
-                <Button
+              <Grid item xs={12} sm={4}>
+                <TextField
                   fullWidth
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={handleAddFilter}
-                  disabled={
-                    (filterType === 'ip' && !ipFilter.value) ||
-                    (filterType === 'port' && (!portFilter.value || portFilter.value === 'custom' && !portFilter.customValue)) ||
-                    (filterType === 'mac' && !macFilter.value)
-                  }
-                >
-                  Hinzufügen
-                </Button>
+                  label="IP-Adresse"
+                  placeholder="z.B. 192.168.1.1"
+                  value={ipFilter.value}
+                  onChange={(e) => setIpFilter({...ipFilter, value: e.target.value})}
+                />
               </Grid>
+            </>
+          )}
 
-              {activeFilters.length > 0 && (
-                <Grid item xs={12}>
-                  <Typography variant="subtitle1">Aktive Filter</Typography>
-                  <Paper variant="outlined" sx={{ p: 2, mt: 1 }}>
-                    <Stack spacing={1}>
-                      {activeFilters.map((filter, index) => (
-                        <Box key={filter.id} sx={{ display: 'flex', alignItems: 'center' }}>
-                          {index > 0 && (
-                            <FormControl size="small" sx={{ width: 100, mr: 1 }}>
-                              <Select
-                                value={filter.logicalOperator || 'and'}
-                                onChange={(e) => {
-                                  const updatedFilters = [...activeFilters];
-                                  updatedFilters[index].logicalOperator = e.target.value;
-                                  setActiveFilters(updatedFilters);
-                                }}
-                                displayEmpty
-                              >
-                                {LOGICAL_OPERATORS.map(op => (
-                                  <MenuItem key={op.value} value={op.value}>{op.label}</MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                          )}
-                          <Chip 
-                            label={filter.display} 
-                            onDelete={() => handleRemoveFilter(filter.id)}
-                            color="primary"
-                            variant="outlined"
-                            deleteIcon={<DeleteIcon />}
-                          />
-                        </Box>
-                      ))}
-                    </Stack>
-                  </Paper>
-                </Grid>
-              )}
-
-              {activeFilters.length > 0 && (
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2">Generierter BPF-Filter:</Typography>
-                  <Paper variant="outlined" sx={{ p: 1, mt: 1, bgcolor: 'background.default' }}>
-                    <code>{generateBpfFilter()}</code>
-                  </Paper>
+          {filterType === 'port' && (
+            <>
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Typ</InputLabel>
+                  <Select
+                    value={portFilter.type}
+                    onChange={(e) => setPortFilter({...portFilter, type: e.target.value})}
+                    label="Typ"
+                  >
+                    {PORT_FILTER_TYPES.map(type => (
+                      <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <FormControl fullWidth>
+                  <InputLabel>Port</InputLabel>
+                  <Select
+                    value={portFilter.value}
+                    onChange={(e) => setPortFilter({...portFilter, value: e.target.value})}
+                    label="Port"
+                  >
+                    {COMMON_PORTS.map(port => (
+                      <MenuItem key={port.value} value={port.value}>
+                        {port.label} ({port.value})
+                      </MenuItem>
+                    ))}
+                    <MenuItem value="custom">
+                      <em>Benutzerdefiniert</em>
+                    </MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              {portFilter.value === 'custom' && (
+                <Grid item xs={12} sm={2}>
+                  <TextField
+                    fullWidth
+                    label="Port"
+                    type="number"
+                    placeholder="z.B. 8080"
+                    onChange={(e) => setPortFilter({...portFilter, value: e.target.value})}
+                  />
                 </Grid>
               )}
             </>
           )}
 
-          {/* Aktionsbereich */}
-          <Grid item xs={12}>
-            <Divider sx={{ my: 1 }} />
-            <Stack direction="row" spacing={2} justifyContent="space-between">
-              <Button
-                color="secondary"
-                startIcon={<SaveIcon />}
-                onClick={() => setShowSaveDialog(true)}
-                disabled={(showAdvanced && !manualBpfFilter) || (!showAdvanced && activeFilters.length === 0)}
-              >
-                Filter speichern
-              </Button>
-              <Button 
-                variant="contained" 
-                onClick={handleApplyFilter}
-                disabled={(showAdvanced && !manualBpfFilter) || (!showAdvanced && activeFilters.length === 0)}
-              >
-                Filter anwenden
-              </Button>
-            </Stack>
-          </Grid>
+          {filterType === 'protocol' && (
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Protokoll</InputLabel>
+                <Select
+                  value={protocolFilter.type}
+                  onChange={(e) => setProtocolFilter({...protocolFilter, type: e.target.value})}
+                  label="Protokoll"
+                >
+                  {PROTOCOL_FILTER_TYPES.map(type => (
+                    <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
 
-          {/* Dialog zum Speichern des Filters */}
-          {showSaveDialog && (
-            <Grid item xs={12}>
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="subtitle1">Filter speichern</Typography>
+          {filterType === 'mac' && (
+            <>
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Typ</InputLabel>
+                  <Select
+                    value={macFilter.type}
+                    onChange={(e) => setMacFilter({...macFilter, type: e.target.value})}
+                    label="Typ"
+                  >
+                    {MAC_FILTER_TYPES.map(type => (
+                      <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
-                  label="Filtername"
-                  value={newFilterName}
-                  onChange={(e) => setNewFilterName(e.target.value)}
-                  sx={{ mt: 1 }}
+                  label="MAC-Adresse"
+                  placeholder="z.B. 00:11:22:33:44:55"
+                  value={macFilter.value}
+                  onChange={(e) => setMacFilter({...macFilter, value: e.target.value})}
                 />
-                <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 2 }}>
-                  <Button onClick={() => setShowSaveDialog(false)}>Abbrechen</Button>
-                  <Button 
-                    variant="contained"
-                    onClick={handleSaveFilter}
-                    disabled={!newFilterName}
-                  >
-                    Speichern
-                  </Button>
+              </Grid>
+            </>
+          )}
+
+          <Grid item xs={12} sm={2}>
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddFilter}
+              disabled={
+                (filterType === 'ip' && !ipFilter.value) ||
+                (filterType === 'port' && (!portFilter.value || portFilter.value === 'custom' && !portFilter.customValue)) ||
+                (filterType === 'mac' && !macFilter.value)
+              }
+            >
+              Hinzufügen
+            </Button>
+          </Grid>
+
+          {activeFilters.length > 0 && (
+            <Grid item xs={12}>
+              <Typography variant="subtitle1">Aktive Filter</Typography>
+              <Paper variant="outlined" sx={{ p: 2, mt: 1 }}>
+                <Stack spacing={1}>
+                  {activeFilters.map((filter, index) => (
+                    <Box key={filter.id} sx={{ display: 'flex', alignItems: 'center' }}>
+                      {index > 0 && (
+                        <FormControl size="small" sx={{ width: 100, mr: 1 }}>
+                          <Select
+                            value={filter.logicalOperator || 'and'}
+                            onChange={(e) => {
+                              const updatedFilters = [...activeFilters];
+                              updatedFilters[index].logicalOperator = e.target.value;
+                              setActiveFilters(updatedFilters);
+                            }}
+                            displayEmpty
+                          >
+                            {LOGICAL_OPERATORS.map(op => (
+                              <MenuItem key={op.value} value={op.value}>{op.label}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
+                      <Chip 
+                        label={filter.display} 
+                        onDelete={() => handleRemoveFilter(filter.id)}
+                        color="primary"
+                        variant="outlined"
+                        deleteIcon={<DeleteIcon />}
+                      />
+                    </Box>
+                  ))}
                 </Stack>
               </Paper>
             </Grid>
           )}
+
+          {activeFilters.length > 0 && (
+            <Grid item xs={12}>
+              <Typography variant="subtitle2">Generierter BPF-Filter:</Typography>
+              <Paper variant="outlined" sx={{ p: 1, mt: 1, bgcolor: 'background.default' }}>
+                <code>{generateBpfFilter()}</code>
+              </Paper>
+            </Grid>
+          )}
         </Grid>
-      </CardContent>
-    </Card>
+      )}
+
+      {/* Aktionsbuttons */}
+      <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 2 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => setShowSaveDialog(true)}
+          startIcon={<SaveIcon />}
+          disabled={showAdvanced ? !manualBpfFilter : activeFilters.length === 0}
+        >
+          Speichern
+        </Button>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={handleApplyFilter}
+          disabled={showAdvanced ? !manualBpfFilter : activeFilters.length === 0}
+        >
+          Filter anwenden
+        </Button>
+      </Stack>
+
+      {/* Dialog zum Speichern von Filtern */}
+      {showSaveDialog && (
+        <Paper variant="outlined" sx={{ p: 2, mt: 2 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Filter speichern
+          </Typography>
+          <TextField
+            fullWidth
+            size="small"
+            label="Filtername"
+            value={newFilterName}
+            onChange={(e) => setNewFilterName(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <Stack direction="row" spacing={2} justifyContent="flex-end">
+            <Button size="small" onClick={() => setShowSaveDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              onClick={handleSaveFilter}
+              disabled={!newFilterName}
+            >
+              Speichern
+            </Button>
+          </Stack>
+        </Paper>
+      )}
+    </Box>
   );
 };
 
